@@ -7,10 +7,6 @@ import {
   Send,
   MoreHorizontal,
   Globe,
-  CheckCircle2,
-  ChevronLeft,
-  ChevronRight,
-  ExternalLink,
   Sparkles,
 } from 'lucide-react';
 
@@ -18,9 +14,7 @@ interface ContentExamplesSectionProps {
   onOpenAudit: () => void;
 }
 
-export const ContentExamplesSection: React.FC<ContentExamplesSectionProps> = ({
-  onOpenAudit,
-}) => {
+export const ContentExamplesSection: React.FC<ContentExamplesSectionProps> = () => {
   const [selectedPostIndex, setSelectedPostIndex] = useState(0);
   const [likedPosts, setLikedPosts] = useState<Record<string, boolean>>({});
 
@@ -32,88 +26,87 @@ export const ContentExamplesSection: React.FC<ContentExamplesSectionProps> = ({
   };
 
   const activePost = LINKEDIN_POST_MOCKUPS[selectedPostIndex];
+  const isLiked = !!likedPosts[activePost.id];
 
   return (
     <section
       id="content-examples"
-      className="py-24 bg-[#FAFBFD] border-t border-slate-200/80"
+      className="py-14 sm:py-16 bg-slate-50/50 border-b border-slate-100"
     >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
-        <div className="max-w-3xl mx-auto text-center">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-200/80 text-slate-800 text-xs font-bold uppercase tracking-wider mb-4">
-            <span>Authentic High-Velocity Ghostwriting</span>
+        <div className="max-w-2xl mx-auto text-center">
+          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-slate-200/80 text-slate-800 text-[11px] font-bold uppercase tracking-wider mb-3">
+            <span>Authentic Executive Writing</span>
           </div>
 
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-slate-950 tracking-tight leading-tight">
+          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-slate-950 tracking-tight leading-tight">
             Sample LinkedIn Content We Create
           </h2>
 
-          <p className="mt-4 text-base sm:text-lg text-slate-600 leading-relaxed">
-            Every piece is tailored to your authentic founder voice. We blend
-            vulnerable real-world stories with tactical frameworks that get bookmarked and shared.
+          <p className="mt-2 text-sm sm:text-base text-slate-600">
+            Tailored to your genuine voice. Real-world vulnerability combined with
+            strategic frameworks that drive deals.
           </p>
         </div>
 
-        {/* 3-Tab Selector for the 3 Required Post Topics */}
-        <div className="mt-10 max-w-2xl mx-auto flex flex-col sm:flex-row p-1.5 bg-white border border-slate-200 rounded-xl shadow-xs gap-1">
+        {/* 3-Tab Selector */}
+        <div className="mt-7 max-w-xl mx-auto flex p-1 bg-white border border-slate-200 rounded-xl shadow-2xs gap-1">
           {LINKEDIN_POST_MOCKUPS.map((post, idx) => (
             <button
               key={post.id}
               type="button"
               onClick={() => setSelectedPostIndex(idx)}
-              className={`flex-1 py-2.5 px-3 rounded-lg text-xs sm:text-sm font-bold transition-all text-center ${
+              className={`flex-1 py-2 px-2 rounded-lg text-xs font-bold transition-all text-center ${
                 selectedPostIndex === idx
-                  ? 'bg-slate-950 text-white shadow-sm'
-                  : 'text-slate-600 hover:text-slate-950 hover:bg-slate-50'
+                  ? 'bg-slate-950 text-white shadow-xs'
+                  : 'text-slate-600 hover:text-slate-950'
               }`}
             >
-              Post {idx + 1}: {idx === 0 ? 'D2C Scaling' : idx === 1 ? 'Startup Growth' : 'Marketing Leadership'}
+              {idx === 0 ? 'D2C Scaling' : idx === 1 ? 'Startup Growth' : 'Marketing POV'}
             </button>
           ))}
         </div>
 
-        {/* LinkedIn Post Mockup Container */}
-        <div className="mt-10 max-w-2xl mx-auto">
-          <div className="bg-white rounded-2xl border border-slate-200/90 shadow-xl overflow-hidden">
-            {/* Top Post Category Pill */}
-            <div className="bg-slate-100/90 px-5 py-2.5 border-b border-slate-200/70 flex items-center justify-between text-xs">
-              <span className="font-bold text-slate-700">
+        {/* LinkedIn Post Mockup */}
+        <div className="mt-6 max-w-xl mx-auto">
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-md overflow-hidden">
+            {/* Post Category Pill */}
+            <div className="bg-slate-100 px-4 py-2 border-b border-slate-200/70 flex items-center justify-between text-xs">
+              <span className="font-bold text-slate-700 text-[11px]">
                 {activePost.badgeText}
               </span>
-              <span className="font-semibold text-orange-600 bg-orange-50 px-2 py-0.5 rounded border border-orange-200/50">
+              <span className="font-semibold text-orange-600 bg-orange-50 px-2 py-0.5 rounded text-[11px] border border-orange-200/50">
                 {activePost.stats.impressions} Views
               </span>
             </div>
 
             {/* LinkedIn Header */}
-            <div className="p-5 sm:p-6 pb-3">
+            <div className="p-4 sm:p-5 pb-2">
               <div className="flex items-start justify-between">
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2.5">
                   <img
                     src={activePost.author.avatarUrl}
                     alt={activePost.author.name}
-                    className="w-12 h-12 rounded-full object-cover border border-slate-200"
+                    className="w-10 h-10 rounded-full object-cover border border-slate-200"
                     referrerPolicy="no-referrer"
                   />
                   <div>
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-sm sm:text-base font-bold text-slate-950">
+                    <div className="flex items-center gap-1">
+                      <span className="text-sm font-bold text-slate-950">
                         {activePost.author.name}
                       </span>
                       {activePost.author.verified && (
-                        <span className="text-blue-600 text-xs font-bold" title="Verified Creator">
-                          ✓
-                        </span>
+                        <span className="text-blue-600 text-xs font-bold">✓</span>
                       )}
-                      <span className="text-xs text-slate-400 font-normal">• 1st</span>
+                      <span className="text-xs text-slate-400">• 1st</span>
                     </div>
-                    <p className="text-xs text-slate-500 line-clamp-1 max-w-md">
+                    <p className="text-[11px] text-slate-500 line-clamp-1 max-w-xs sm:max-w-sm">
                       {activePost.author.headline}
                     </p>
-                    <div className="flex items-center gap-1.5 text-[11px] text-slate-400 mt-0.5">
+                    <div className="flex items-center gap-1 text-[10px] text-slate-400">
                       <span>{activePost.timeAgo}</span>
-                      <Globe className="w-3 h-3 text-slate-400" />
+                      <Globe className="w-2.5 h-2.5" />
                     </div>
                   </div>
                 </div>
@@ -121,27 +114,21 @@ export const ContentExamplesSection: React.FC<ContentExamplesSectionProps> = ({
                 <div className="flex items-center gap-1">
                   <button
                     type="button"
-                    className="text-blue-600 hover:text-blue-800 text-xs font-bold px-2.5 py-1 rounded-md hover:bg-blue-50 transition-colors"
+                    className="text-blue-600 hover:text-blue-800 text-xs font-bold px-2 py-0.5 rounded hover:bg-blue-50"
                   >
                     + Follow
                   </button>
-                  <button
-                    type="button"
-                    className="text-slate-400 hover:text-slate-600 p-1"
-                    aria-label="Post options"
-                  >
-                    <MoreHorizontal className="w-4 h-4" />
-                  </button>
+                  <MoreHorizontal className="w-4 h-4 text-slate-400" />
                 </div>
               </div>
 
-              {/* Post Content Body */}
-              <div className="mt-4 text-sm text-slate-800 space-y-2.5 leading-relaxed">
+              {/* Post Content */}
+              <div className="mt-3 text-xs sm:text-sm text-slate-800 space-y-2 leading-relaxed">
                 {activePost.contentLines.map((line, lIdx) =>
                   line === '' ? (
-                    <div key={lIdx} className="h-2" />
+                    <div key={lIdx} className="h-1.5" />
                   ) : (
-                    <p key={lIdx} className={line.startsWith('1.') || line.startsWith('2.') || line.startsWith('3.') || line.startsWith('4.') || line.startsWith('→') ? 'font-medium pl-1 text-slate-900' : ''}>
+                    <p key={lIdx} className={line.startsWith('1.') || line.startsWith('2.') || line.startsWith('•') || line.startsWith('→') ? 'font-medium pl-1 text-slate-900' : ''}>
                       {line}
                     </p>
                   )
@@ -149,162 +136,86 @@ export const ContentExamplesSection: React.FC<ContentExamplesSectionProps> = ({
               </div>
 
               {/* Hashtags */}
-              <div className="mt-3 flex flex-wrap gap-1.5 text-xs text-blue-700 font-semibold">
+              <div className="mt-2.5 flex flex-wrap gap-1 text-xs text-blue-700 font-semibold">
                 {activePost.hashtags.map((tag) => (
-                  <span key={tag} className="hover:underline cursor-pointer">
-                    {tag}
-                  </span>
+                  <span key={tag}>{tag}</span>
                 ))}
               </div>
             </div>
 
-            {/* Embedded Visual Asset / Carousel Mockup */}
+            {/* Embedded Asset if present */}
             {activePost.hasMedia && (
-              <div className="mx-5 sm:mx-6 mb-4 rounded-xl border border-slate-200 bg-slate-950 text-white p-5 shadow-sm">
-                <div className="flex items-center justify-between text-[11px] text-slate-400 mb-3 border-b border-slate-800 pb-2">
-                  <span className="font-semibold text-orange-400 uppercase tracking-wider flex items-center gap-1">
-                    <Sparkles className="w-3.5 h-3.5" />
-                    Custom Visual Asset
+              <div className="mx-4 sm:mx-5 mb-3 rounded-xl bg-slate-950 text-white p-4 border border-slate-800 text-center">
+                <div className="flex items-center justify-between text-[10px] text-slate-400 mb-2 border-b border-slate-800 pb-1.5">
+                  <span className="font-semibold text-orange-400 flex items-center gap-1">
+                    <Sparkles className="w-3 h-3" /> Custom Branded Asset
                   </span>
-                  <span className="bg-slate-800 px-2 py-0.5 rounded text-white font-mono">
+                  <span className="bg-slate-800 px-1.5 py-0.5 rounded text-white font-mono">
                     Slide 1 of 7
                   </span>
                 </div>
-                <div className="py-4 text-center">
-                  <div className="text-lg sm:text-xl font-extrabold text-white tracking-tight">
-                    {activePost.mediaTitle}
-                  </div>
-                  <div className="text-xs text-slate-300 mt-1 max-w-md mx-auto">
-                    {activePost.mediaSubtitle}
-                  </div>
-                  <div className="mt-4 flex items-center justify-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-orange-500" />
-                    <div className="w-2 h-2 rounded-full bg-slate-700" />
-                    <div className="w-2 h-2 rounded-full bg-slate-700" />
-                    <div className="w-2 h-2 rounded-full bg-slate-700" />
-                    <div className="w-2 h-2 rounded-full bg-slate-700" />
-                  </div>
+                <div className="text-sm sm:text-base font-extrabold text-white">
+                  {activePost.mediaTitle}
                 </div>
-                <div className="pt-2 border-t border-slate-800 flex items-center justify-between text-[11px] text-slate-400">
-                  <span>Swipe for Full Framework ➔</span>
-                  <span className="text-slate-500 font-medium">Founder Authority Design Suite</span>
+                <div className="text-[11px] text-slate-400 mt-0.5">
+                  {activePost.mediaSubtitle}
                 </div>
               </div>
             )}
 
-            {/* Social Proof Counter Bar */}
-            <div className="px-5 sm:px-6 py-2.5 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
-              <div className="flex items-center gap-1.5">
-                <div className="flex -space-x-1">
-                  <span className="w-4 h-4 rounded-full bg-blue-600 text-white flex items-center justify-center text-[9px]">
-                    👍
-                  </span>
-                  <span className="w-4 h-4 rounded-full bg-orange-500 text-white flex items-center justify-center text-[9px]">
-                    💡
-                  </span>
-                  <span className="w-4 h-4 rounded-full bg-emerald-600 text-white flex items-center justify-center text-[9px]">
-                    👏
-                  </span>
-                </div>
-                <span className="font-medium text-slate-700">
-                  {activePost.stats.reactions + (likedPosts[activePost.id] ? 1 : 0)}
+            {/* Social Count Bar */}
+            <div className="px-4 sm:px-5 py-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
+              <div className="flex items-center gap-1">
+                <span className="w-3.5 h-3.5 rounded-full bg-blue-600 text-white flex items-center justify-center text-[8px]">
+                  👍
                 </span>
+                <span>{activePost.stats.reactions + (isLiked ? 1 : 0)} reactions</span>
               </div>
-
-              <div className="flex items-center gap-3">
+              <div className="flex gap-2">
                 <span>{activePost.stats.comments} comments</span>
                 <span>•</span>
                 <span>{activePost.stats.reposts} reposts</span>
               </div>
             </div>
 
-            {/* Interaction Buttons Bar */}
-            <div className="px-3 sm:px-4 py-1.5 border-t border-slate-200/80 grid grid-cols-4 gap-1 text-xs font-semibold text-slate-600">
+            {/* Interactive Action Bar */}
+            <div className="px-4 sm:px-5 py-2 border-t border-slate-100 bg-slate-50/50 flex items-center justify-between">
               <button
                 type="button"
                 onClick={() => toggleLike(activePost.id)}
-                className={`py-2 px-1 rounded-lg flex items-center justify-center gap-1.5 transition-colors ${
-                  likedPosts[activePost.id]
-                    ? 'text-blue-600 bg-blue-50'
-                    : 'hover:bg-slate-100 text-slate-600'
+                className={`flex items-center gap-1.5 text-xs font-semibold py-1 px-2 rounded transition-colors ${
+                  isLiked ? 'text-blue-600 font-bold' : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
-                <ThumbsUp className={`w-4 h-4 ${likedPosts[activePost.id] ? 'fill-blue-600' : ''}`} />
+                <ThumbsUp className={`w-3.5 h-3.5 ${isLiked ? 'fill-blue-600 text-blue-600' : ''}`} />
                 <span>Like</span>
               </button>
 
               <button
                 type="button"
-                className="py-2 px-1 rounded-lg flex items-center justify-center gap-1.5 hover:bg-slate-100 transition-colors"
+                className="flex items-center gap-1.5 text-xs font-semibold text-slate-600 hover:text-slate-900 py-1 px-2"
               >
-                <MessageSquare className="w-4 h-4 text-slate-500" />
+                <MessageSquare className="w-3.5 h-3.5 text-slate-400" />
                 <span>Comment</span>
               </button>
 
               <button
                 type="button"
-                className="py-2 px-1 rounded-lg flex items-center justify-center gap-1.5 hover:bg-slate-100 transition-colors"
+                className="flex items-center gap-1.5 text-xs font-semibold text-slate-600 hover:text-slate-900 py-1 px-2"
               >
-                <Repeat2 className="w-4 h-4 text-slate-500" />
+                <Repeat2 className="w-3.5 h-3.5 text-slate-400" />
                 <span>Repost</span>
               </button>
 
               <button
                 type="button"
-                className="py-2 px-1 rounded-lg flex items-center justify-center gap-1.5 hover:bg-slate-100 transition-colors"
+                className="flex items-center gap-1.5 text-xs font-semibold text-slate-600 hover:text-slate-900 py-1 px-2"
               >
-                <Send className="w-4 h-4 text-slate-500" />
+                <Send className="w-3.5 h-3.5 text-slate-400" />
                 <span>Send</span>
               </button>
             </div>
           </div>
-
-          {/* Quick pagination arrows */}
-          <div className="mt-4 flex items-center justify-between text-xs text-slate-500">
-            <button
-              type="button"
-              onClick={() =>
-                setSelectedPostIndex((prev) =>
-                  prev === 0 ? LINKEDIN_POST_MOCKUPS.length - 1 : prev - 1
-                )
-              }
-              className="flex items-center gap-1 font-semibold hover:text-slate-900 transition-colors"
-            >
-              <ChevronLeft className="w-4 h-4" />
-              <span>Previous Sample</span>
-            </button>
-
-            <span className="text-slate-400 font-mono">
-              Sample {selectedPostIndex + 1} of 3
-            </span>
-
-            <button
-              type="button"
-              onClick={() =>
-                setSelectedPostIndex((prev) =>
-                  prev === LINKEDIN_POST_MOCKUPS.length - 1 ? 0 : prev + 1
-                )
-              }
-              className="flex items-center gap-1 font-semibold hover:text-slate-900 transition-colors"
-            >
-              <span>Next Sample</span>
-              <ChevronRight className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-
-        {/* Bottom CTA bar */}
-        <div className="mt-14 max-w-3xl mx-auto text-center">
-          <p className="text-sm text-slate-600 mb-4">
-            Want to see how your specific domain knowledge would look transformed into high-performing LinkedIn posts?
-          </p>
-          <button
-            type="button"
-            onClick={onOpenAudit}
-            className="inline-flex items-center gap-2 bg-slate-950 hover:bg-slate-900 text-white font-bold text-sm px-6 py-3.5 rounded-xl shadow-sm transition-all"
-          >
-            <span>Request a Custom Sample Post for Your Profile</span>
-          </button>
         </div>
       </div>
     </section>

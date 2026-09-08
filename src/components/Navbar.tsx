@@ -24,13 +24,10 @@ export const Navbar: React.FC<NavbarProps> = ({
   }, []);
 
   const navLinks = [
+    { label: 'Problem', href: '#problem' },
     { label: 'Services', href: '#services' },
-    { label: 'Who We Help', href: '#who-we-help' },
-    { label: 'Framework', href: '#process' },
-    { label: 'Sample Posts', href: '#content-examples' },
-    { label: 'Results', href: '#results' },
+    { label: 'Samples', href: '#content-examples' },
     { label: 'Pricing', href: '#pricing' },
-    { label: 'FAQ', href: '#faq' },
   ];
 
   return (

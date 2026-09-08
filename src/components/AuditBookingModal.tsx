@@ -32,9 +32,15 @@ export const AuditBookingModal: React.FC<AuditBookingModalProps> = ({
     companyName: '',
     audienceType: initialAudience || 'Startup Founders',
     primaryGoal: 'Inbound Business Deals & Leads',
-    selectedPlan: initialPlan || 'Growth Plan (₹35,000/mo)',
+    selectedPlan: initialPlan || 'Growth Plan (₹40,000/mo)',
     selectedDate: 'Tomorrow, 3:00 PM IST',
   });
+
+  React.useEffect(() => {
+    if (initialPlan) {
+      setFormData((prev) => ({ ...prev, selectedPlan: initialPlan }));
+    }
+  }, [initialPlan]);
 
   if (!isOpen) return null;
 
@@ -276,12 +282,9 @@ export const AuditBookingModal: React.FC<AuditBookingModalProps> = ({
                   }
                   className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-slate-900 text-sm bg-white"
                 >
-                  <option value="Starter Plan (₹15,000/mo)">Starter Plan (₹15,000/mo)</option>
-                  <option value="Growth Plan (₹35,000/mo) - Most Popular">
-                    Growth Plan (₹35,000/mo) - Most Popular
-                  </option>
-                  <option value="Authority Plan (Custom Pricing)">
-                    Authority Plan (Custom Pricing)
+                  <option value="Starter Plan (₹25,000/mo)">Starter Plan (₹25,000/mo)</option>
+                  <option value="Growth Plan (₹40,000/mo) - Most Popular">
+                    Growth Plan (₹40,000/mo) - Most Popular
                   </option>
                   <option value="Just exploring free profile audit">
                     Just exploring free profile audit
