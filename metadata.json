@@ -1,6 +1,6 @@
 {
   "name": "Founder Authority",
-  "description": "LinkedIn Personal Branding Agency for Founders & Leaders. Build authority, visibility, and opportunities on LinkedIn with strategic personal branding services.",
+  "description": "We help founders become more visible, trusted and remembered on LinkedIn.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

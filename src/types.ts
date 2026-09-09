@@ -108,3 +108,45 @@ export interface FaqItem {
   answer: string;
   keyTakeaway?: string;
 }
+
+export interface LinkedInAuthorityAudit {
+  profileHandle: string;
+  authorityScore: number;
+  breakdown: {
+    profileFoundation: number; // 20%
+    authority: number;         // 20%
+    contentStrategy: number;   // 20%
+    positioning: number;       // 20%
+    growthPotential: number;   // 20%
+  };
+  strengths: string[];
+  improvements: string[];
+  currentHeadline: string;
+  recommendedHeadline: string;
+  aboutSectionSuggestions: string[];
+  contentPillars: Array<{
+    title: string;
+    description: string;
+  }>;
+  thoughtLeadershipVerdict: string;
+}
+
+export interface AuditLeadRecord {
+  id?: string;
+  name: string;
+  email: string;
+  company: string;
+  linkedin_url: string;
+  authority_score: number;
+  breakdown?: {
+    profileFoundation: number;
+    authority: number;
+    contentStrategy: number;
+    positioning: number;
+    growthPotential: number;
+  };
+  strengths?: string[];
+  improvements?: string[];
+  recommended_headline?: string;
+  timestamp: string;
+}

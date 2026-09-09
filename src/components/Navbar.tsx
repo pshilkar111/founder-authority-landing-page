@@ -1,17 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { Menu, X, ArrowRight, ShieldCheck, Linkedin, Sparkles } from 'lucide-react';
+import { Menu, X, ArrowRight, ShieldCheck } from 'lucide-react';
+import { BrandLogo } from './BrandLogo';
 
 interface NavbarProps {
   onOpenAudit: (planName?: string) => void;
-  currency: 'INR' | 'USD';
-  onToggleCurrency: () => void;
+  onOpenAdmin?: () => void;
 }
 
-export const Navbar: React.FC<NavbarProps> = ({
-  onOpenAudit,
-  currency,
-  onToggleCurrency,
-}) => {
+export const Navbar: React.FC<NavbarProps> = ({ onOpenAudit, onOpenAdmin }) => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -24,9 +20,9 @@ export const Navbar: React.FC<NavbarProps> = ({
   }, []);
 
   const navLinks = [
-    { label: 'Problem', href: '#problem' },
-    { label: 'Services', href: '#services' },
-    { label: 'Samples', href: '#content-examples' },
+    { label: 'LinkedIn Score', href: '#linkedin-score' },
+    { label: 'Why Us', href: '#why-us' },
+    { label: 'How It Works', href: '#how-it-works' },
     { label: 'Pricing', href: '#pricing' },
   ];
 
@@ -35,96 +31,80 @@ export const Navbar: React.FC<NavbarProps> = ({
       id="main-header"
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
         isScrolled
-          ? 'bg-white/90 backdrop-blur-md shadow-sm border-b border-slate-200/80 py-3.5'
+          ? 'bg-[#0B0B0F]/90 backdrop-blur-md border-b border-[#262626] py-3'
           : 'bg-transparent py-5'
       }`}
     >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-5xl mx-auto px-6 sm:px-8">
         <div className="flex items-center justify-between">
           {/* Brand Logo */}
           <a
             href="#"
             id="brand-logo"
-            className="flex items-center gap-2.5 group focus:outline-none"
+            className="flex items-center group focus:outline-none"
           >
-            <div className="w-10 h-10 rounded-xl bg-slate-950 text-white flex items-center justify-center font-bold text-lg tracking-wider border border-slate-800 shadow-sm group-hover:border-orange-500 transition-colors">
-              <span className="text-white">F</span>
-              <span className="text-orange-500">A</span>
-            </div>
-            <div className="flex flex-col">
-              <span className="text-lg font-extrabold tracking-tight text-slate-950 flex items-center gap-1">
-                Founder Authority
-                <span className="w-1.5 h-1.5 rounded-full bg-orange-500 inline-block"></span>
-              </span>
-              <span className="text-[11px] font-medium text-slate-500 tracking-wide uppercase">
-                LinkedIn Branding Agency
-              </span>
-            </div>
+            <BrandLogo size="md" />
           </a>
 
           {/* Desktop Navigation Links */}
-          <nav className="hidden lg:flex items-center gap-7" aria-label="Main Navigation">
+          <nav
+            id="desktop-nav"
+            className="hidden md:flex items-center gap-1 bg-[#14141A]/80 backdrop-blur-md px-3 py-1 rounded-full border border-[#262626]"
+          >
             {navLinks.map((link) => (
               <a
                 key={link.label}
                 href={link.href}
-                className="text-sm font-medium text-slate-600 hover:text-slate-950 transition-colors py-1"
+                className="text-xs font-medium text-[#A1A1AA] hover:text-[#FFFFFF] transition-colors px-3 py-1 rounded-full"
               >
                 {link.label}
               </a>
             ))}
           </nav>
 
-          {/* Actions: Currency Toggle + Primary CTA */}
-          <div className="hidden sm:flex items-center gap-3.5">
-            <button
-              type="button"
-              id="currency-toggle-btn"
-              onClick={onToggleCurrency}
-              className="text-xs font-semibold px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 transition-colors flex items-center gap-1 shadow-2xs"
-              title="Toggle Currency"
-            >
-              <span className="text-slate-400">Currency:</span>
-              <span className={currency === 'INR' ? 'text-orange-600 font-bold' : 'text-slate-600'}>₹ INR</span>
-              <span className="text-slate-300">/</span>
-              <span className={currency === 'USD' ? 'text-orange-600 font-bold' : 'text-slate-600'}>$ USD</span>
-            </button>
-
-            <a
-              href="#content-examples"
-              className="text-sm font-semibold text-slate-700 hover:text-slate-950 transition-colors px-3 py-2"
-            >
-              View Samples
-            </a>
+          {/* Action CTAs */}
+          <div className="hidden sm:flex items-center gap-2.5">
+            {onOpenAdmin && (
+              <button
+                type="button"
+                onClick={onOpenAdmin}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-[#A1A1AA] hover:text-[#FFFFFF] hover:bg-[#14141A] border border-[#262626] transition-colors cursor-pointer"
+                title="View captured leads"
+              >
+                <ShieldCheck className="w-3.5 h-3.5 text-[#FF6A00]" />
+                <span>Admin</span>
+              </button>
+            )}
 
             <button
               type="button"
               id="nav-book-audit-btn"
               onClick={() => onOpenAudit()}
-              className="inline-flex items-center gap-2 bg-slate-950 hover:bg-slate-900 text-white font-semibold text-sm px-4.5 py-2.5 rounded-xl shadow-sm hover:shadow transition-all group border border-slate-800"
+              className="inline-flex items-center gap-1.5 bg-[#FF6A00] hover:bg-[#FF8533] active:bg-[#E65A00] text-[#0B0B0F] font-semibold text-xs px-4 py-2 rounded-lg transition-colors cursor-pointer shadow-sm"
             >
-              <span>Book Free Audit</span>
-              <ArrowRight className="w-4 h-4 text-orange-400 group-hover:translate-x-0.5 transition-transform" />
+              <span>Book Strategy Call</span>
+              <ArrowRight className="w-3.5 h-3.5" />
             </button>
           </div>
 
           {/* Mobile Menu Button */}
-          <div className="flex items-center gap-2 lg:hidden">
+          <div className="flex items-center gap-2 md:hidden">
             <button
               type="button"
               onClick={() => onOpenAudit()}
-              className="sm:hidden text-xs font-semibold bg-slate-950 text-white px-3 py-2 rounded-lg"
+              className="text-xs font-semibold bg-[#FF6A00] hover:bg-[#FF8533] text-[#0B0B0F] px-3 py-1.5 rounded-lg"
             >
-              Free Audit
+              Book Call
             </button>
+
             <button
               type="button"
               id="mobile-menu-toggle"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="p-2 text-slate-700 hover:text-slate-950 hover:bg-slate-100 rounded-lg transition-colors"
+              className="p-1.5 text-[#A1A1AA] hover:text-[#FFFFFF] rounded-lg transition-colors"
               aria-label="Toggle navigation menu"
             >
-              {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+              {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
           </div>
         </div>
@@ -133,40 +113,44 @@ export const Navbar: React.FC<NavbarProps> = ({
         {mobileMenuOpen && (
           <div
             id="mobile-nav-panel"
-            className="lg:hidden mt-3 pt-3 pb-5 border-t border-slate-200 bg-white/95 backdrop-blur-md rounded-2xl p-4 shadow-xl border"
+            className="md:hidden mt-3 p-4 border border-[#262626] bg-[#14141A] rounded-2xl shadow-xl space-y-2"
           >
-            <div className="flex flex-col gap-2.5">
-              {navLinks.map((link) => (
-                <a
-                  key={link.label}
-                  href={link.href}
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="text-base font-medium text-slate-700 hover:text-orange-600 py-1.5 px-2 rounded-md hover:bg-slate-50 transition-colors"
-                >
-                  {link.label}
-                </a>
-              ))}
-              <div className="pt-3 mt-2 border-t border-slate-100 flex items-center justify-between">
-                <button
-                  type="button"
-                  onClick={onToggleCurrency}
-                  className="text-xs font-medium px-3 py-1.5 rounded-lg border border-slate-200 bg-slate-50 text-slate-700"
-                >
-                  Currency: {currency === 'INR' ? '₹ INR (Indian Rupees)' : '$ USD (US Dollars)'}
-                </button>
-              </div>
+            {navLinks.map((link) => (
+              <a
+                key={link.label}
+                href={link.href}
+                onClick={() => setMobileMenuOpen(false)}
+                className="block text-xs font-medium text-[#A1A1AA] hover:text-[#FFFFFF] py-2 px-2 rounded-lg"
+              >
+                {link.label}
+              </a>
+            ))}
+
+            {onOpenAdmin && (
               <button
                 type="button"
                 onClick={() => {
                   setMobileMenuOpen(false);
-                  onOpenAudit();
+                  onOpenAdmin();
                 }}
-                className="w-full mt-3 bg-orange-600 hover:bg-orange-700 text-white font-bold py-3 px-4 rounded-xl flex items-center justify-center gap-2 text-sm shadow-md"
+                className="w-full text-left text-xs font-medium text-[#A1A1AA] hover:text-[#FFFFFF] py-2 px-2 rounded-lg flex items-center gap-1.5"
               >
-                <span>Book Free LinkedIn Audit</span>
-                <ArrowRight className="w-4 h-4" />
+                <ShieldCheck className="w-3.5 h-3.5 text-[#FF6A00]" />
+                <span>Admin Leads</span>
               </button>
-            </div>
+            )}
+
+            <button
+              type="button"
+              onClick={() => {
+                setMobileMenuOpen(false);
+                onOpenAudit();
+              }}
+              className="w-full mt-2 bg-[#FF6A00] hover:bg-[#FF8533] text-[#0B0B0F] font-semibold py-2.5 px-4 rounded-lg flex items-center justify-center gap-2 text-xs"
+            >
+              <span>Book Strategy Call</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
           </div>
         )}
       </div>

@@ -1,0 +1,52 @@
+{
+  "entities": {
+    "linkedin_audit_leads": {
+      "title": "LinkedIn Audit Leads",
+      "description": "Captured founder leads and their generated LinkedIn Authority Score report details",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Founder's full name"
+        },
+        "email": {
+          "type": "string",
+          "description": "Founder's business email"
+        },
+        "company": {
+          "type": "string",
+          "description": "Founder's company or venture name"
+        },
+        "linkedin_url": {
+          "type": "string",
+          "description": "Target LinkedIn profile URL"
+        },
+        "authority_score": {
+          "type": "number",
+          "description": "Computed overall LinkedIn Authority Score (0-10)"
+        },
+        "breakdown": {
+          "type": "object",
+          "description": "Scores across the 5 core framework categories"
+        },
+        "strengths": {
+          "type": "array",
+          "description": "Key profile strengths"
+        },
+        "improvements": {
+          "type": "array",
+          "description": "Key areas for authority improvement"
+        },
+        "recommended_headline": {
+          "type": "string",
+          "description": "AI-optimized recommended headline"
+        },
+        "timestamp": {
+          "type": "string",
+          "description": "ISO timestamp when the audit lead was submitted"
+        }
+      },
+      "required": ["name", "email", "linkedin_url", "authority_score", "timestamp"]
+    }
+  }
+}

@@ -1,0 +1,15 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Audit Leads collection:
+    // Allow public write (create) for inbound prospective founders submitting their audit lead
+    // Allow read access for viewing audit history and admin metrics
+    match /linkedin_audit_leads/{leadId} {
+      allow create: if request.resource.data.name is string &&
+                       request.resource.data.email is string &&
+                       request.resource.data.linkedin_url is string;
+      allow read: if true;
+      allow update, delete: if true;
+    }
+  }
+}

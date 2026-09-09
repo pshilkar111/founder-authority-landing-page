@@ -2,37 +2,33 @@ import React, { useState } from 'react';
 import {
   X,
   CheckCircle2,
-  Calendar,
   Clock,
   ArrowRight,
-  ShieldCheck,
-  Sparkles,
   Linkedin,
 } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { db } from '../lib/firebase';
 
 interface AuditBookingModalProps {
   isOpen: boolean;
   onClose: () => void;
   initialPlan?: string;
-  initialAudience?: string;
 }
 
 export const AuditBookingModal: React.FC<AuditBookingModalProps> = ({
   isOpen,
   onClose,
   initialPlan,
-  initialAudience,
 }) => {
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
     linkedinUrl: '',
-    founderRole: 'Founder / CEO',
     companyName: '',
-    audienceType: initialAudience || 'Startup Founders',
-    primaryGoal: 'Inbound Business Deals & Leads',
-    selectedPlan: initialPlan || 'Growth Plan (₹40,000/mo)',
+    primaryGoal: 'Attracting Customers & Inbound Opportunities',
+    selectedPlan: initialPlan || 'For Founders Ready To Grow (₹40,000/mo)',
     selectedDate: 'Tomorrow, 3:00 PM IST',
   });
 
@@ -42,8 +38,6 @@ export const AuditBookingModal: React.FC<AuditBookingModalProps> = ({
     }
   }, [initialPlan]);
 
-  if (!isOpen) return null;
-
   const handleSubmitStep1 = (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.fullName || !formData.email || !formData.linkedinUrl) {
@@ -52,316 +46,281 @@ export const AuditBookingModal: React.FC<AuditBookingModalProps> = ({
     setStep(2);
   };
 
-  const handleConfirmBooking = (e: React.FormEvent) => {
+  const handleConfirmBooking = async (e: React.FormEvent) => {
     e.preventDefault();
+    try {
+      if (db) {
+        await addDoc(collection(db, 'strategy_call_bookings'), {
+          ...formData,
+          createdAt: serverTimestamp(),
+        });
+      }
+    } catch (err) {
+      console.warn('Notice saving booking:', err);
+    }
     setStep(3);
   };
 
   const availableSlots = [
-    'Tomorrow, 11:00 AM IST (15 mins)',
-    'Tomorrow, 3:00 PM IST (15 mins)',
-    'Thursday, 12:30 PM IST (15 mins)',
-    'Thursday, 4:30 PM IST (15 mins)',
-    'Friday, 2:00 PM IST (15 mins)',
+    'Tomorrow, 11:00 AM IST (20 mins)',
+    'Tomorrow, 3:00 PM IST (20 mins)',
+    'Thursday, 12:30 PM IST (20 mins)',
+    'Thursday, 4:30 PM IST (20 mins)',
+    'Friday, 2:00 PM IST (20 mins)',
   ];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto bg-slate-950/70 backdrop-blur-xs">
-      <div
-        className="relative w-full max-w-xl bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden my-8"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Modal Top Header Bar */}
-        <div className="bg-slate-950 text-white p-6 sm:p-7 flex items-center justify-between relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-48 h-48 bg-orange-500/10 rounded-full blur-3xl pointer-events-none" />
-          <div className="relative z-10">
-            <div className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-orange-400 mb-1">
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>Executive Profile Audit</span>
-            </div>
-            <h3 className="text-xl sm:text-2xl font-black text-white">
-              {step === 3 ? 'Audit Scheduled!' : 'Book Your Free LinkedIn Audit'}
-            </h3>
-            <p className="text-xs sm:text-sm text-slate-300 mt-1">
-              {step === 1 && 'Step 1 of 2: Tell us about your profile and company'}
-              {step === 2 && 'Step 2 of 2: Pick your preferred 15-minute discovery slot'}
-              {step === 3 && 'Your confidential 7-point audit is being prepared'}
-            </p>
-          </div>
-
-          <button
-            type="button"
+    <AnimatePresence>
+      {isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
+          {/* Backdrop */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
             onClick={onClose}
-            className="p-2 text-slate-400 hover:text-white rounded-full hover:bg-slate-800 transition-colors z-10"
-            aria-label="Close modal"
+            className="fixed inset-0 bg-[#0B0B0F]/80 backdrop-blur-sm"
+          />
+
+          {/* Modal Box */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.96, y: 8 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.96, y: 8 }}
+            transition={{ duration: 0.2 }}
+            className="relative w-full max-w-lg bg-[#14141A] rounded-2xl shadow-2xl border border-[#262626] overflow-hidden my-6 z-10 text-[#FFFFFF]"
+            onClick={(e) => e.stopPropagation()}
           >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        {/* Modal Body */}
-        <div className="p-6 sm:p-8">
-          {/* STEP 1: Founder Information */}
-          {step === 1 && (
-            <form onSubmit={handleSubmitStep1} className="space-y-4">
+            {/* Modal Header */}
+            <div className="p-5 sm:p-6 border-b border-[#262626] flex items-center justify-between">
               <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                  Your Full Name <span className="text-rose-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. Vikramaditya Singhania"
-                  value={formData.fullName}
-                  onChange={(e) =>
-                    setFormData({ ...formData, fullName: e.target.value })
-                  }
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/30 focus:border-orange-500 transition-all"
-                />
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                    Work Email <span className="text-rose-500">*</span>
-                  </label>
-                  <input
-                    type="email"
-                    required
-                    placeholder="vikram@yourcompany.com"
-                    value={formData.email}
-                    onChange={(e) =>
-                      setFormData({ ...formData, email: e.target.value })
-                    }
-                    className="w-full px-4 py-3 rounded-xl border border-slate-200 text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/30 focus:border-orange-500 transition-all"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                    Role / Title
-                  </label>
-                  <select
-                    value={formData.founderRole}
-                    onChange={(e) =>
-                      setFormData({ ...formData, founderRole: e.target.value })
-                    }
-                    className="w-full px-4 py-3 rounded-xl border border-slate-200 text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/30 focus:border-orange-500 transition-all bg-white"
-                  >
-                    <option value="Founder / CEO">Founder / CEO</option>
-                    <option value="Co-founder & CTO">Co-founder & CTO / CPO</option>
-                    <option value="D2C Brand Owner">D2C Brand Owner</option>
-                    <option value="Marketing Leader (CMO / VP)">Marketing Leader (CMO / VP)</option>
-                    <option value="Consultant / Advisor">Consultant / Advisor</option>
-                    <option value="Real Estate Executive">Real Estate Executive</option>
-                  </select>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                  LinkedIn Profile URL <span className="text-rose-500">*</span>
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-                    <Linkedin className="w-4 h-4 text-blue-600" />
-                  </div>
-                  <input
-                    type="text"
-                    required
-                    placeholder="https://linkedin.com/in/yourname"
-                    value={formData.linkedinUrl}
-                    onChange={(e) =>
-                      setFormData({ ...formData, linkedinUrl: e.target.value })
-                    }
-                    className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/30 focus:border-orange-500 transition-all"
-                  />
-                </div>
-                <span className="text-[11px] text-slate-400 mt-1 block">
-                  Our strategists manually review this profile before your discovery call.
+                <span className="text-[11px] font-semibold text-[#FF6A00] uppercase tracking-wider block mb-1">
+                  Strategy Call
                 </span>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                    Company / Brand Name
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="e.g. Apex Health D2C"
-                    value={formData.companyName}
-                    onChange={(e) =>
-                      setFormData({ ...formData, companyName: e.target.value })
-                    }
-                    className="w-full px-4 py-3 rounded-xl border border-slate-200 text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/30 focus:border-orange-500 transition-all"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                    Primary Goal
-                  </label>
-                  <select
-                    value={formData.primaryGoal}
-                    onChange={(e) =>
-                      setFormData({ ...formData, primaryGoal: e.target.value })
-                    }
-                    className="w-full px-4 py-3 rounded-xl border border-slate-200 text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/30 focus:border-orange-500 transition-all bg-white"
-                  >
-                    <option value="Inbound Business Deals & Leads">Inbound Business Deals & Leads</option>
-                    <option value="Fundraising & Investor Credibility">Fundraising & Investor Credibility</option>
-                    <option value="Recruiting Top Talent & Engineers">Recruiting Top Talent & Engineers</option>
-                    <option value="Speaking & Category Authority">Speaking & Category Authority</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="pt-3">
-                <button
-                  type="submit"
-                  className="w-full bg-orange-600 hover:bg-orange-700 text-white font-bold py-3.5 px-6 rounded-xl flex items-center justify-center gap-2 text-sm shadow-md shadow-orange-600/20 transition-all"
-                >
-                  <span>Continue to Slot Selection</span>
-                  <ArrowRight className="w-4 h-4" />
-                </button>
-              </div>
-
-              <div className="flex items-center justify-center gap-2 text-[11px] text-slate-400 pt-1">
-                <ShieldCheck className="w-4 h-4 text-emerald-600" />
-                <span>100% Confidential. We never disclose client inquiries.</span>
-              </div>
-            </form>
-          )}
-
-          {/* STEP 2: Slot Selection */}
-          {step === 2 && (
-            <form onSubmit={handleConfirmBooking} className="space-y-5">
-              <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
-                  Select a 15-Minute Audit Discovery Slot:
-                </label>
-                <div className="space-y-2">
-                  {availableSlots.map((slot) => (
-                    <label
-                      key={slot}
-                      className={`flex items-center justify-between p-3.5 rounded-xl border cursor-pointer transition-all ${
-                        formData.selectedDate === slot
-                          ? 'border-orange-500 bg-orange-50/50 ring-1 ring-orange-500'
-                          : 'border-slate-200 hover:border-slate-300 bg-white'
-                      }`}
-                    >
-                      <div className="flex items-center gap-3">
-                        <Clock className="w-4 h-4 text-slate-500" />
-                        <span className="text-xs sm:text-sm font-semibold text-slate-900">
-                          {slot}
-                        </span>
-                      </div>
-                      <input
-                        type="radio"
-                        name="auditSlot"
-                        checked={formData.selectedDate === slot}
-                        onChange={() =>
-                          setFormData({ ...formData, selectedDate: slot })
-                        }
-                        className="text-orange-600 focus:ring-orange-500"
-                      />
-                    </label>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                  Plan of Interest (Optional):
-                </label>
-                <select
-                  value={formData.selectedPlan}
-                  onChange={(e) =>
-                    setFormData({ ...formData, selectedPlan: e.target.value })
-                  }
-                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-slate-900 text-sm bg-white"
-                >
-                  <option value="Starter Plan (₹25,000/mo)">Starter Plan (₹25,000/mo)</option>
-                  <option value="Growth Plan (₹40,000/mo) - Most Popular">
-                    Growth Plan (₹40,000/mo) - Most Popular
-                  </option>
-                  <option value="Just exploring free profile audit">
-                    Just exploring free profile audit
-                  </option>
-                </select>
-              </div>
-
-              <div className="pt-2 flex items-center gap-3">
-                <button
-                  type="button"
-                  onClick={() => setStep(1)}
-                  className="w-1/3 py-3 px-4 rounded-xl border border-slate-200 text-slate-700 text-xs font-bold hover:bg-slate-50"
-                >
-                  Back
-                </button>
-                <button
-                  type="submit"
-                  className="w-2/3 bg-orange-600 hover:bg-orange-700 text-white font-bold py-3 px-6 rounded-xl flex items-center justify-center gap-2 text-sm shadow-md transition-all"
-                >
-                  <span>Confirm Free Audit</span>
-                  <CheckCircle2 className="w-4 h-4" />
-                </button>
-              </div>
-            </form>
-          )}
-
-          {/* STEP 3: Success Confirmation */}
-          {step === 3 && (
-            <div className="text-center py-4 space-y-4">
-              <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto">
-                <CheckCircle2 className="w-8 h-8" />
-              </div>
-
-              <div>
-                <h4 className="text-xl font-black text-slate-950">
-                  Audit Call Confirmed!
-                </h4>
-                <p className="text-sm text-slate-600 mt-1 max-w-sm mx-auto">
-                  A calendar invitation and prep email have been dispatched to{' '}
-                  <strong className="text-slate-900">{formData.email}</strong>.
+                <h3 className="font-display font-bold text-lg text-[#FFFFFF]">
+                  {step === 3 ? 'Call Confirmed' : 'Book a Strategy Call'}
+                </h3>
+                <p className="text-xs text-[#A1A1AA] mt-0.5">
+                  {step === 1 && 'Step 1 of 2: Your profile & focus'}
+                  {step === 2 && 'Step 2 of 2: Pick a 20-minute slot'}
+                  {step === 3 && 'We look forward to speaking with you'}
                 </p>
-              </div>
-
-              <div className="bg-slate-50 rounded-2xl p-4 border border-slate-200 text-left text-xs text-slate-700 space-y-2">
-                <div className="flex justify-between">
-                  <span className="text-slate-500">Scheduled Time:</span>
-                  <span className="font-bold text-slate-900">{formData.selectedDate}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-500">Profile Analyzed:</span>
-                  <span className="font-bold text-slate-900 line-clamp-1 max-w-[240px]">
-                    {formData.linkedinUrl}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-500">Lead Strategist:</span>
-                  <span className="font-bold text-orange-600">Senior Executive Ghostwriter</span>
-                </div>
-              </div>
-
-              <div className="p-3.5 bg-orange-50 rounded-xl border border-orange-200/60 text-xs text-orange-950 text-left">
-                <strong>Next Step:</strong> Our team is performing your 7-point audit
-                right now. You will receive an initial positioning summary prior to the
-                discovery call.
               </div>
 
               <button
                 type="button"
                 onClick={onClose}
-                className="w-full bg-slate-950 hover:bg-slate-900 text-white font-bold py-3 px-6 rounded-xl text-sm transition-colors"
+                className="p-1.5 text-[#A1A1AA] hover:text-[#FFFFFF] rounded-lg hover:bg-[#0B0B0F] transition-colors cursor-pointer"
+                aria-label="Close"
               >
-                Return to Site
+                <X className="w-4 h-4" />
               </button>
             </div>
-          )}
+
+            {/* Modal Content */}
+            <div className="p-5 sm:p-6">
+              {/* STEP 1: Founder Details */}
+              {step === 1 && (
+                <form onSubmit={handleSubmitStep1} className="space-y-3.5">
+                  <div>
+                    <label className="block text-xs font-medium text-[#A1A1AA] mb-1">
+                      Your Name <span className="text-[#FF6A00]">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. Vikram Sharma"
+                      value={formData.fullName}
+                      onChange={(e) =>
+                        setFormData({ ...formData, fullName: e.target.value })
+                      }
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-[#0B0B0F] border border-[#262626] text-[#FFFFFF] text-xs placeholder-[#A1A1AA]/50 focus:outline-none focus:border-[#FF6A00]"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-medium text-[#A1A1AA] mb-1">
+                        Work Email <span className="text-[#FF6A00]">*</span>
+                      </label>
+                      <input
+                        type="email"
+                        required
+                        placeholder="vikram@company.com"
+                        value={formData.email}
+                        onChange={(e) =>
+                          setFormData({ ...formData, email: e.target.value })
+                        }
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-[#0B0B0F] border border-[#262626] text-[#FFFFFF] text-xs placeholder-[#A1A1AA]/50 focus:outline-none focus:border-[#FF6A00]"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-medium text-[#A1A1AA] mb-1">
+                        Company Name
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Apex Software"
+                        value={formData.companyName}
+                        onChange={(e) =>
+                          setFormData({ ...formData, companyName: e.target.value })
+                        }
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-[#0B0B0F] border border-[#262626] text-[#FFFFFF] text-xs placeholder-[#A1A1AA]/50 focus:outline-none focus:border-[#FF6A00]"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-medium text-[#A1A1AA] mb-1">
+                      LinkedIn Profile URL <span className="text-[#FF6A00]">*</span>
+                    </label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-[#A1A1AA]">
+                        <Linkedin className="w-3.5 h-3.5 text-[#FF6A00]" />
+                      </div>
+                      <input
+                        type="url"
+                        required
+                        placeholder="https://linkedin.com/in/your-profile"
+                        value={formData.linkedinUrl}
+                        onChange={(e) =>
+                          setFormData({ ...formData, linkedinUrl: e.target.value })
+                        }
+                        className="w-full pl-9 pr-3.5 py-2.5 rounded-xl bg-[#0B0B0F] border border-[#262626] text-[#FFFFFF] text-xs placeholder-[#A1A1AA]/50 focus:outline-none focus:border-[#FF6A00]"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-medium text-[#A1A1AA] mb-1">
+                      Primary Goal
+                    </label>
+                    <select
+                      value={formData.primaryGoal}
+                      onChange={(e) =>
+                        setFormData({ ...formData, primaryGoal: e.target.value })
+                      }
+                      className="w-full px-3 py-2.5 rounded-xl bg-[#0B0B0F] border border-[#262626] text-[#FFFFFF] text-xs focus:outline-none focus:border-[#FF6A00]"
+                    >
+                      <option value="Attracting Customers & Inbound Opportunities">Attracting Customers & Inbound Deals</option>
+                      <option value="Venture Capital & Investor Trust">Investor Trust & Fundraising</option>
+                      <option value="Hiring Elite Talent">Hiring Key Team Members</option>
+                      <option value="Industry Visibility & Reputation">Industry Visibility & Reputation</option>
+                    </select>
+                  </div>
+
+                  <div className="pt-2">
+                    <button
+                      type="submit"
+                      className="w-full bg-[#FF6A00] hover:bg-[#FF8533] active:bg-[#E65A00] text-[#0B0B0F] font-semibold py-3 px-5 rounded-xl text-xs sm:text-sm flex items-center justify-center gap-2 transition-colors cursor-pointer"
+                    >
+                      <span>Continue to Select Time</span>
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </form>
+              )}
+
+              {/* STEP 2: Pick Time Slot */}
+              {step === 2 && (
+                <form onSubmit={handleConfirmBooking} className="space-y-4">
+                  <div className="p-3 bg-[#0B0B0F] rounded-xl border border-[#262626] text-xs flex justify-between">
+                    <span className="text-[#A1A1AA]">Founder:</span>
+                    <strong className="text-[#FFFFFF]">{formData.fullName}</strong>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-medium text-[#A1A1AA] mb-2">
+                      Choose Your Preferred 20-Minute Slot:
+                    </label>
+                    <div className="space-y-2">
+                      {availableSlots.map((slot) => (
+                        <label
+                          key={slot}
+                          className={`flex items-center justify-between p-3 rounded-xl border text-xs cursor-pointer transition-all ${
+                            formData.selectedDate === slot
+                              ? 'bg-[#0B0B0F] border-[#FF6A00] text-[#FFFFFF] font-medium'
+                              : 'bg-[#0B0B0F] border-[#262626] text-[#A1A1AA] hover:border-[#383838]'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2">
+                            <Clock className="w-3.5 h-3.5 text-[#FF6A00]" />
+                            <span>{slot}</span>
+                          </div>
+                          <input
+                            type="radio"
+                            name="selectedSlot"
+                            checked={formData.selectedDate === slot}
+                            onChange={() => setFormData({ ...formData, selectedDate: slot })}
+                            className="text-[#FF6A00] focus:ring-[#FF6A00]"
+                          />
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="flex gap-2 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setStep(1)}
+                      className="px-4 py-2.5 rounded-xl border border-[#262626] text-xs font-medium text-[#A1A1AA] hover:text-[#FFFFFF]"
+                    >
+                      Back
+                    </button>
+                    <button
+                      type="submit"
+                      className="flex-1 bg-[#FF6A00] hover:bg-[#FF8533] text-[#0B0B0F] font-semibold py-2.5 px-4 rounded-xl text-xs flex items-center justify-center gap-2 transition-colors cursor-pointer"
+                    >
+                      <span>Confirm 20-Min Strategy Call</span>
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </form>
+              )}
+
+              {/* STEP 3: Confirmed */}
+              {step === 3 && (
+                <div className="text-center py-2 space-y-4">
+                  <div className="w-12 h-12 rounded-full bg-[#FF6A00]/15 text-[#FF6A00] border border-[#FF6A00]/30 flex items-center justify-center mx-auto">
+                    <CheckCircle2 className="w-6 h-6" />
+                  </div>
+
+                  <div>
+                    <h4 className="font-display font-bold text-lg text-[#FFFFFF]">
+                      Strategy Call Confirmed
+                    </h4>
+                    <p className="text-xs text-[#A1A1AA] mt-1 max-w-sm mx-auto">
+                      A calendar invite has been sent to{' '}
+                      <strong className="text-[#FFFFFF]">{formData.email}</strong>.
+                    </p>
+                  </div>
+
+                  <div className="bg-[#0B0B0F] rounded-xl p-3.5 border border-[#262626] text-left text-xs text-[#A1A1AA] space-y-2">
+                    <div className="flex justify-between">
+                      <span>Scheduled:</span>
+                      <span className="font-medium text-[#FFFFFF]">{formData.selectedDate}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Format:</span>
+                      <span className="font-medium text-[#FFFFFF]">Google Meet (20 mins)</span>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={onClose}
+                    className="w-full bg-[#FF6A00] hover:bg-[#FF8533] text-[#0B0B0F] font-semibold py-2.5 px-4 rounded-xl text-xs transition-colors cursor-pointer mt-2"
+                  >
+                    Done
+                  </button>
+                </div>
+              )}
+            </div>
+          </motion.div>
         </div>
-      </div>
-    </div>
+      )}
+    </AnimatePresence>
   );
 };

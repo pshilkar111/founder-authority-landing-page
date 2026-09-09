@@ -1,60 +1,61 @@
 import React from 'react';
-import { ArrowRight, CheckCircle2, Sparkles } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
+import { motion } from 'motion/react';
 
 interface FinalCtaSectionProps {
   onOpenAudit: () => void;
 }
 
 export const FinalCtaSection: React.FC<FinalCtaSectionProps> = ({ onOpenAudit }) => {
+  const scrollToAudit = (e: React.MouseEvent) => {
+    e.preventDefault();
+    const element = document.getElementById('linkedin-score');
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
   return (
-    <section className="py-12 sm:py-16 bg-white border-b border-slate-100">
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="relative rounded-2xl bg-slate-950 text-white p-7 sm:p-10 overflow-hidden shadow-xl border border-slate-800 text-center">
-          {/* Subtle Orange Glow */}
-          <div className="absolute top-0 right-1/4 w-72 h-72 bg-orange-500/10 blur-[90px] pointer-events-none rounded-full" />
+    <section className="py-24 sm:py-32 bg-[#0B0B0F] text-[#FFFFFF] border-b border-[#262626] relative overflow-hidden">
+      <div className="max-w-4xl mx-auto px-6 sm:px-8 text-center">
+        <motion.div
+          initial={{ opacity: 0, y: 14 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.45 }}
+          className="bg-[#14141A] rounded-3xl p-8 sm:p-14 border border-[#262626]"
+        >
+          {/* Headline */}
+          <h2 className="font-display font-extrabold text-2xl sm:text-4xl lg:text-5xl text-[#FFFFFF] tracking-tight leading-tight max-w-2xl mx-auto">
+            Stop Being The Best-Kept Secret In Your Industry.
+          </h2>
 
-          <div className="relative z-10 max-w-2xl mx-auto">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-900 text-orange-400 border border-slate-800 text-[11px] font-semibold mb-4">
-              <Sparkles className="w-3 h-3" />
-              <span>Limited to 8 New Founders Monthly</span>
-            </div>
-
-            <h2 className="text-2xl sm:text-4xl font-extrabold text-white tracking-tight leading-tight">
-              Stop Being The Best Kept Secret In Your Industry.
-            </h2>
-
-            <p className="mt-3 text-sm sm:text-base text-slate-300">
-              Let's turn your expertise into influence and opportunities.
-            </p>
-
-            <div className="mt-6 flex flex-col sm:flex-row items-center justify-center gap-3">
-              <button
-                type="button"
-                id="final-cta-btn"
-                onClick={onOpenAudit}
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-orange-600 hover:bg-orange-700 text-white text-sm font-bold px-6 py-3.5 rounded-xl shadow-md transition-all group"
-              >
-                <span>Book Your Free LinkedIn Audit</span>
-                <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
-              </button>
-            </div>
-
-            <div className="mt-5 flex flex-wrap items-center justify-center gap-x-5 gap-y-1.5 text-xs text-slate-400 font-medium">
-              <div className="flex items-center gap-1">
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                <span>Zero sales pressure</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                <span>Custom 7-point audit breakdown</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                <span>Delivered within 48 hours</span>
-              </div>
-            </div>
+          {/* Subheadline */}
+          <div className="mt-5 text-base sm:text-lg text-[#A1A1AA] max-w-md mx-auto space-y-1">
+            <p>Your competitors aren't smarter.</p>
+            <p className="text-[#FFFFFF]/90 font-medium">They're just more visible.</p>
           </div>
-        </div>
+
+          {/* CTAs */}
+          <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-3.5">
+            <a
+              href="#linkedin-score"
+              onClick={scrollToAudit}
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-[#FF6A00] hover:bg-[#FF8533] active:bg-[#E65A00] text-[#0B0B0F] font-semibold text-sm px-7 py-3.5 rounded-xl transition-colors cursor-pointer shadow-sm"
+            >
+              <span>Get My LinkedIn Score</span>
+              <ArrowRight className="w-4 h-4 text-[#0B0B0F]" />
+            </a>
+
+            <button
+              type="button"
+              onClick={onOpenAudit}
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-[#0B0B0F] hover:bg-[#1C1C24] text-[#FFFFFF] font-medium text-sm px-6 py-3.5 rounded-xl border border-[#262626] hover:border-[#383838] transition-colors cursor-pointer"
+            >
+              <span>Book Strategy Call</span>
+            </button>
+          </div>
+        </motion.div>
       </div>
     </section>
   );
