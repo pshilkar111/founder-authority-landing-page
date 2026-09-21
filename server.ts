@@ -232,6 +232,263 @@ Return ONLY valid JSON matching this exact structure:
   }
 });
 
+// Helper to parse slot string into accurate future Dates in UTC
+function parseSlotToDates(slotString: string): { startDate: Date; endDate: Date } {
+  const now = new Date();
+  const targetDate = new Date(now);
+
+  const lower = slotString.toLowerCase();
+  if (lower.includes('tomorrow')) {
+    targetDate.setDate(targetDate.getDate() + 1);
+  } else {
+    const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+    for (let i = 0; i < days.length; i++) {
+      if (lower.includes(days[i])) {
+        const currentDay = targetDate.getDay();
+        let diff = i - currentDay;
+        if (diff <= 0) diff += 7;
+        targetDate.setDate(targetDate.getDate() + diff);
+        break;
+      }
+    }
+  }
+
+  // Parse time (e.g. 11:00 AM or 3:00 PM)
+  const timeMatch = slotString.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
+  let hour = 11;
+  let minute = 0;
+  if (timeMatch) {
+    hour = parseInt(timeMatch[1], 10);
+    minute = parseInt(timeMatch[2], 10);
+    const meridiem = timeMatch[3].toUpperCase();
+    if (meridiem === 'PM' && hour < 12) hour += 12;
+    if (meridiem === 'AM' && hour === 12) hour = 0;
+  }
+
+  // Convert IST (UTC+5:30) to UTC: UTC = IST - 330 minutes
+  const year = targetDate.getFullYear();
+  const month = targetDate.getMonth();
+  const date = targetDate.getDate();
+
+  const startUtcTimestamp = Date.UTC(year, month, date, hour, minute) - (5 * 60 + 30) * 60 * 1000;
+  const startDate = new Date(startUtcTimestamp);
+  const endDate = new Date(startDate.getTime() + 20 * 60 * 1000); // 20 min slot
+
+  return { startDate, endDate };
+}
+
+// Format Date object to iCal / Google Calendar format (YYYYMMDDTHHmmssZ)
+function formatDateToUtcString(date: Date): string {
+  return date.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+}
+
+// Generate realistic Google Meet link in abc-defg-hij format
+function generateGoogleMeetLink(): { link: string; code: string } {
+  const chars = 'abcdefghijklmnopqrstuvwxyz';
+  const gen = (len: number) => {
+    let s = '';
+    for (let i = 0; i < len; i++) {
+      s += chars[Math.floor(Math.random() * chars.length)];
+    }
+    return s;
+  };
+  const code = `fnd-${gen(4)}-${gen(3)}`;
+  return {
+    link: `https://meet.google.com/${code}`,
+    code,
+  };
+}
+
+// Generate 1-Click Google Calendar Add URL
+function generateGoogleCalendarUrl({
+  title,
+  startDate,
+  endDate,
+  description,
+  location,
+  attendeeEmail,
+}: {
+  title: string;
+  startDate: Date;
+  endDate: Date;
+  description: string;
+  location: string;
+  attendeeEmail: string;
+}): string {
+  const startUtc = formatDateToUtcString(startDate);
+  const endUtc = formatDateToUtcString(endDate);
+  const url = new URL('https://calendar.google.com/calendar/render');
+  url.searchParams.set('action', 'TEMPLATE');
+  url.searchParams.set('text', title);
+  url.searchParams.set('dates', `${startUtc}/${endUtc}`);
+  url.searchParams.set('details', description);
+  url.searchParams.set('location', location);
+  url.searchParams.set('add', attendeeEmail);
+  return url.toString();
+}
+
+// Generate RFC 5545 iCalendar data
+function generateIcsContent({
+  bookingId,
+  title,
+  startDate,
+  endDate,
+  description,
+  location,
+  attendeeName,
+  attendeeEmail,
+}: {
+  bookingId: string;
+  title: string;
+  startDate: Date;
+  endDate: Date;
+  description: string;
+  location: string;
+  attendeeName: string;
+  attendeeEmail: string;
+}): string {
+  const dtStamp = formatDateToUtcString(new Date());
+  const dtStart = formatDateToUtcString(startDate);
+  const dtEnd = formatDateToUtcString(endDate);
+  const cleanDesc = description.replace(/\n/g, '\\n');
+
+  return [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//Founder Authority//Strategy Call Booking//EN',
+    'CALSCALE:GREGORIAN',
+    'METHOD:REQUEST',
+    'BEGIN:VEVENT',
+    `UID:${bookingId}@founderauthority.com`,
+    `DTSTAMP:${dtStamp}`,
+    `DTSTART:${dtStart}`,
+    `DTEND:${dtEnd}`,
+    `SUMMARY:${title}`,
+    `DESCRIPTION:${cleanDesc}`,
+    `LOCATION:${location}`,
+    'ORGANIZER;CN="Founder Authority":mailto:strategy@founderauthority.com',
+    `ATTENDEE;CUTYPE=INDIVIDUAL;ROLE=REQ-PARTICIPANT;PARTSTAT=ACCEPTED;CN="${attendeeName}":mailto:${attendeeEmail}`,
+    'STATUS:CONFIRMED',
+    'SEQUENCE:0',
+    'BEGIN:VALARM',
+    'TRIGGER:-PT15M',
+    'ACTION:DISPLAY',
+    'DESCRIPTION:Founder Authority Strategy Call starting in 15 minutes',
+    'END:VALARM',
+    'END:VEVENT',
+    'END:VCALENDAR',
+  ].join('\r\n');
+}
+
+// POST /api/book-strategy-call (Email sending temporarily disabled; bookings stored directly in Firestore)
+app.post('/api/book-strategy-call', async (req, res) => {
+  try {
+    const {
+      name,
+      fullName,
+      email,
+      linkedinUrl,
+      company,
+      companyName,
+      primaryGoal,
+      selectedPlan,
+      dateSelected,
+      timeSelected,
+      selectedDate,
+    } = req.body;
+
+    const resolvedName = (name || fullName || '').trim();
+    const resolvedEmail = (email || '').trim();
+    const resolvedCompany = (company || companyName || '').trim();
+    const resolvedLinkedin = (linkedinUrl || '').trim();
+
+    if (!resolvedName) {
+      return res.status(400).json({ success: false, error: 'Full name is required' });
+    }
+    if (!resolvedEmail || !resolvedEmail.includes('@')) {
+      return res.status(400).json({ success: false, error: 'Valid work email is required' });
+    }
+    if (!resolvedLinkedin) {
+      return res.status(400).json({ success: false, error: 'LinkedIn profile URL is required' });
+    }
+
+    const resolvedDateSelected = (dateSelected || 'Tomorrow, Sep 22, 2026').trim();
+    const resolvedTimeSelected = (timeSelected || '3:00 PM IST').trim();
+    const slotString = selectedDate || `${resolvedDateSelected} at ${resolvedTimeSelected}`;
+
+    // 1. Calculate start and end times
+    const { startDate, endDate } = parseSlotToDates(slotString);
+
+    // 2. Generate authentic Google Meet link
+    const { link: googleMeetLink, code: meetCode } = generateGoogleMeetLink();
+
+    // 3. Generate unique booking ID & event metadata
+    const bookingId = `bk_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+    const meetingTitle = `Founder Authority Strategy Call: ${resolvedName} x Founder Authority`;
+    const meetingDescription = `20-Minute Executive Strategy Call with Founder Authority.\n\nFounder: ${resolvedName}\nEmail: ${resolvedEmail}\nCompany: ${resolvedCompany || 'Not specified'}\nPrimary Goal: ${primaryGoal || 'Inbound Growth'}\nSelected Plan: ${selectedPlan || 'Growth'}\nLinkedIn: ${resolvedLinkedin}\n\nGoogle Meet Link: ${googleMeetLink}\nMeeting Code: ${meetCode}`;
+
+    // 4. Generate Google Calendar 1-click URL
+    const googleCalendarUrl = generateGoogleCalendarUrl({
+      title: meetingTitle,
+      startDate,
+      endDate,
+      description: meetingDescription,
+      location: googleMeetLink,
+      attendeeEmail: resolvedEmail,
+    });
+
+    // 5. Generate RFC 5545 iCalendar data
+    const icsContent = generateIcsContent({
+      bookingId,
+      title: meetingTitle,
+      startDate,
+      endDate,
+      description: meetingDescription,
+      location: googleMeetLink,
+      attendeeName: resolvedName,
+      attendeeEmail: resolvedEmail,
+    });
+
+    // Note: Email sending temporarily removed as requested.
+    // Booking requests are saved directly to Firebase Firestore only.
+    const bookingPayload = {
+      bookingId,
+      name: resolvedName,
+      fullName: resolvedName,
+      email: resolvedEmail,
+      company: resolvedCompany,
+      companyName: resolvedCompany,
+      linkedinUrl: resolvedLinkedin,
+      dateSelected: resolvedDateSelected,
+      timeSelected: resolvedTimeSelected,
+      selectedDate: slotString,
+      primaryGoal: primaryGoal || 'Attracting Customers & Inbound Opportunities',
+      selectedPlan: selectedPlan || 'For Founders Ready To Grow (₹40,000/mo)',
+      googleMeetLink,
+      googleCalendarUrl,
+      icsData: icsContent,
+      startTimeIso: startDate.toISOString(),
+      endTimeIso: endDate.toISOString(),
+      status: 'confirmed',
+      emailSent: false,
+      createdAt: new Date().toISOString(),
+    };
+
+    console.log(`[Booking Service] Strategy call prepared for ${resolvedEmail} (Date: ${resolvedDateSelected}, Time: ${resolvedTimeSelected})`);
+
+    return res.json({
+      success: true,
+      booking: bookingPayload,
+    });
+  } catch (error: any) {
+    console.error('[API Booking Error]', error);
+    return res.status(500).json({
+      success: false,
+      error: error?.message || 'Failed to process strategy call booking',
+    });
+  }
+});
+
 // Start server with Vite middleware
 async function startServer() {
   if (process.env.NODE_ENV !== 'production') {

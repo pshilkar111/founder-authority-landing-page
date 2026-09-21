@@ -1,13 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Menu, X, ArrowRight, ShieldCheck } from 'lucide-react';
+import { Menu, X, ArrowRight } from 'lucide-react';
 import { BrandLogo } from './BrandLogo';
 
 interface NavbarProps {
   onOpenAudit: (planName?: string) => void;
-  onOpenAdmin?: () => void;
 }
 
-export const Navbar: React.FC<NavbarProps> = ({ onOpenAudit, onOpenAdmin }) => {
+export const Navbar: React.FC<NavbarProps> = ({ onOpenAudit }) => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -64,18 +63,6 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAudit, onOpenAdmin }) => {
 
           {/* Action CTAs */}
           <div className="hidden sm:flex items-center gap-2.5">
-            {onOpenAdmin && (
-              <button
-                type="button"
-                onClick={onOpenAdmin}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-[#A1A1AA] hover:text-[#FFFFFF] hover:bg-[#14141A] border border-[#262626] transition-colors cursor-pointer"
-                title="View captured leads"
-              >
-                <ShieldCheck className="w-3.5 h-3.5 text-[#FF6A00]" />
-                <span>Admin</span>
-              </button>
-            )}
-
             <button
               type="button"
               id="nav-book-audit-btn"
@@ -125,20 +112,6 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAudit, onOpenAdmin }) => {
                 {link.label}
               </a>
             ))}
-
-            {onOpenAdmin && (
-              <button
-                type="button"
-                onClick={() => {
-                  setMobileMenuOpen(false);
-                  onOpenAdmin();
-                }}
-                className="w-full text-left text-xs font-medium text-[#A1A1AA] hover:text-[#FFFFFF] py-2 px-2 rounded-lg flex items-center gap-1.5"
-              >
-                <ShieldCheck className="w-3.5 h-3.5 text-[#FF6A00]" />
-                <span>Admin Leads</span>
-              </button>
-            )}
 
             <button
               type="button"

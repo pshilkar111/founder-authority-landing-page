@@ -150,3 +150,32 @@ export interface AuditLeadRecord {
   recommended_headline?: string;
   timestamp: string;
 }
+
+export interface StrategyCallBookingRecord {
+  id?: string;
+  name?: string;
+  fullName: string;
+  email: string;
+  company?: string;
+  companyName: string;
+  linkedinUrl: string;
+  dateSelected: string;
+  timeSelected: string;
+  selectedDate?: string;
+  primaryGoal?: string;
+  selectedPlan?: string;
+  googleMeetLink?: string;
+  googleCalendarUrl?: string;
+  icsData?: string;
+  status?: string;
+  emailSent?: boolean;
+  emailDetails?: {
+    messageId?: string;
+    previewUrl?: string;
+  };
+  startTimeIso?: string;
+  endTimeIso?: string;
+  createdAt?: any;
+  persistedAt?: any;
+  timestamp?: string;
+}

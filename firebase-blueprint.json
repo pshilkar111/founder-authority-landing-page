@@ -47,6 +47,82 @@
         }
       },
       "required": ["name", "email", "linkedin_url", "authority_score", "timestamp"]
+    },
+    "strategy_call_bookings": {
+      "title": "Strategy Call Bookings",
+      "description": "Booked strategy calls with founders saved to Firestore",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Founder's full name"
+        },
+        "fullName": {
+          "type": "string",
+          "description": "Founder's full name"
+        },
+        "email": {
+          "type": "string",
+          "description": "Founder's work email"
+        },
+        "company": {
+          "type": "string",
+          "description": "Company or venture name"
+        },
+        "companyName": {
+          "type": "string",
+          "description": "Company or venture name"
+        },
+        "linkedinUrl": {
+          "type": "string",
+          "description": "Founder's LinkedIn URL"
+        },
+        "dateSelected": {
+          "type": "string",
+          "description": "Date selected by the founder"
+        },
+        "timeSelected": {
+          "type": "string",
+          "description": "Time selected by the founder"
+        },
+        "primaryGoal": {
+          "type": "string",
+          "description": "Founder's primary growth goal"
+        },
+        "selectedPlan": {
+          "type": "string",
+          "description": "Plan selected or discussed"
+        },
+        "status": {
+          "type": "string",
+          "description": "Booking status (e.g. confirmed)"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp when the booking was stored"
+        }
+      },
+      "required": ["email", "dateSelected", "timeSelected"]
+    },
+    "admin_users": {
+      "title": "Admin Users",
+      "description": "List of authorized administrator emails and roles",
+      "type": "object",
+      "properties": {
+        "email": {
+          "type": "string",
+          "description": "Admin user email"
+        },
+        "role": {
+          "type": "string",
+          "description": "Administrator role (e.g. superadmin, admin)"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp when admin access was granted"
+        }
+      },
+      "required": ["email", "role"]
     }
   }
 }

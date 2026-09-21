@@ -1,13 +1,12 @@
 import React from 'react';
-import { Linkedin, Mail, ShieldCheck } from 'lucide-react';
+import { Mail } from 'lucide-react';
 import { BrandLogo } from './BrandLogo';
 
 interface FooterProps {
   onOpenAudit: () => void;
-  onOpenAdmin?: () => void;
 }
 
-export const Footer: React.FC<FooterProps> = ({ onOpenAdmin }) => {
+export const Footer: React.FC<FooterProps> = () => {
   return (
     <footer className="bg-[#0B0B0F] text-[#A1A1AA] py-10 border-t border-[#262626] text-xs">
       <div className="max-w-5xl mx-auto px-6 sm:px-8 flex flex-col sm:flex-row items-center justify-between gap-6">
@@ -22,7 +21,7 @@ export const Footer: React.FC<FooterProps> = ({ onOpenAdmin }) => {
           </span>
         </div>
 
-        {/* Minimal Navigation & Admin */}
+        {/* Minimal Navigation */}
         <div className="flex flex-wrap items-center justify-center gap-5 text-xs text-[#A1A1AA]">
           <a href="#linkedin-score" className="hover:text-[#FFFFFF] transition-colors">
             LinkedIn Score
@@ -36,17 +35,6 @@ export const Footer: React.FC<FooterProps> = ({ onOpenAdmin }) => {
           <a href="#pricing" className="hover:text-[#FFFFFF] transition-colors">
             Pricing
           </a>
-
-          {onOpenAdmin && (
-            <button
-              type="button"
-              onClick={onOpenAdmin}
-              className="hover:text-[#FFFFFF] transition-colors cursor-pointer text-[#A1A1AA]/60 hover:text-[#FF6A00] flex items-center gap-1"
-            >
-              <ShieldCheck className="w-3 h-3 text-[#FF6A00]" />
-              <span>Admin</span>
-            </button>
-          )}
 
           <a
             href="mailto:hello@founderauthority.com"
