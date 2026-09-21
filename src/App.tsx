@@ -9,6 +9,7 @@ import { HeroSection } from './components/HeroSection';
 import { AuthorityAuditSection } from './components/AuthorityAuditSection';
 import { WhyFounderAuthoritySection } from './components/WhyFounderAuthoritySection';
 import { HowItWorksSection } from './components/HowItWorksSection';
+import { AuthorityDemandSection } from './components/AuthorityDemandSection';
 import { PricingSection } from './components/PricingSection';
 import { FinalCtaSection } from './components/FinalCtaSection';
 import { Footer } from './components/Footer';
@@ -45,6 +46,9 @@ export default function App() {
 
         {/* 4. How It Works (3 Steps Only) */}
         <HowItWorksSection onOpenAudit={() => handleOpenAudit()} />
+
+        {/* 4.5. Authority + Demand Generation */}
+        <AuthorityDemandSection onOpenAudit={() => handleOpenAudit()} />
 
         {/* 5. Pricing */}
         <PricingSection onOpenAudit={(plan) => handleOpenAudit(plan)} />
