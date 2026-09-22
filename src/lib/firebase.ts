@@ -31,8 +31,11 @@ export const firebaseConfig = {
 // Initialize Firebase App safely
 export const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 
+// Database ID provisioned for this project
+export const FIRESTORE_DATABASE_ID = 'ai-studio-founderauthority-e205245f-29a8-4baf-9447-0b5a0714868e';
+
 // Initialize Cloud Firestore database for project 'founderauthority-ffb73'
-export const db = getFirestore(app);
+export const db = getFirestore(app, FIRESTORE_DATABASE_ID);
 
 // Initialize Firebase Authentication
 export const auth = getAuth(app);
