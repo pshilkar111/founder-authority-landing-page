@@ -610,6 +610,18 @@ app.get(['/llms.txt', '/.well-known/llms.txt'], (req, res) => {
   }
 });
 
+// Google Search Console Automated HTML File Verification Handler
+app.get('/google:code.html', (req, res) => {
+  const code = req.params.code;
+  const filePath = path.join(process.cwd(), 'public', `google${code}.html`);
+  if (fs.existsSync(filePath)) {
+    res.sendFile(filePath);
+  } else {
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.send(`google-site-verification: google${code}.html`);
+  }
+});
+
 // Start server with Vite middleware
 async function startServer() {
   if (process.env.NODE_ENV !== 'production') {

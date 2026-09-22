@@ -32,6 +32,6 @@ Allow: /
 User-agent: Meta-ExternalAgent
 Allow: /
 
-# Sitemap & LLMs Knowledge Base
-Sitemap: /sitemap.xml
-LLMs-Txt: /llms.txt
+# Sitemap & LLMs Knowledge Base for founderauthority.in
+Sitemap: https://founderauthority.in/sitemap.xml
+LLMs-Txt: https://founderauthority.in/llms.txt
