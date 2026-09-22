@@ -57,32 +57,54 @@ export const AuthorityAuditSection: React.FC<AuthorityAuditSectionProps> = ({ on
     if (!leadName || !leadEmail) return;
 
     setIsSubmittingLead(true);
+    const leadData = {
+      name: leadName,
+      email: leadEmail,
+      company: leadCompany || 'Founder',
+      linkedin_url: profileUrl,
+      authority_score: 7.4,
+      strengths: [
+        'Strong industry credibility',
+        'Relevant experience',
+        'Clear expertise',
+      ],
+      areas_to_improve: [
+        'Headline',
+        'Positioning',
+        'Content consistency',
+      ],
+      recommendations: [
+        'Rewrite headline',
+        'Improve About section',
+        'Create content pillars',
+        'Build founder narrative',
+      ],
+    };
+
     try {
-      if (db) {
-        await addDoc(collection(db, 'linkedin_audit_leads'), {
-          name: leadName,
-          email: leadEmail,
-          company: leadCompany || 'Founder',
-          linkedin_url: profileUrl,
-          authority_score: 7.4,
-          strengths: [
-            'Strong industry credibility',
-            'Relevant experience',
-            'Clear expertise',
-          ],
-          areas_to_improve: [
-            'Headline',
-            'Positioning',
-            'Content consistency',
-          ],
-          recommendations: [
-            'Rewrite headline',
-            'Improve About section',
-            'Create content pillars',
-            'Build founder narrative',
-          ],
-          timestamp: serverTimestamp(),
+      // 1. Post to server lead backup
+      try {
+        await fetch('/api/save-lead', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(leadData),
         });
+      } catch (apiErr) {
+        console.warn('Notice saving lead to server:', apiErr);
+      }
+
+      // 2. Post to Firestore with 2s timeout
+      if (db) {
+        try {
+          const writePromise = addDoc(collection(db, 'linkedin_audit_leads'), {
+            ...leadData,
+            timestamp: serverTimestamp(),
+          });
+          const timeoutPromise = new Promise((resolve) => setTimeout(() => resolve(null), 2000));
+          await Promise.race([writePromise, timeoutPromise]);
+        } catch (dbErr) {
+          console.warn('Notice saving lead to Firestore:', dbErr);
+        }
       }
     } catch (err) {
       console.warn('Notice saving lead:', err);

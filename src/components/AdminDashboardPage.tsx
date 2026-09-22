@@ -94,100 +94,143 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
 
   const fetchData = async () => {
     setIsLoading(true);
+    let allBookings: StrategyCallBookingRecord[] = [];
+    let allLeads: AuditLeadRecord[] = [];
+
     try {
-      if (!db) {
-        setIsLoading(false);
-        return;
-      }
-
-      // 1. Fetch Strategy Call Bookings
-      try {
-        let bookingDocs: any[] = [];
+      // 1. Fetch Strategy Call Bookings from Firestore with 2.5s timeout
+      if (db) {
         try {
-          const bookingsQuery = query(
-            collection(db, 'strategy_call_bookings'),
-            orderBy('createdAt', 'desc'),
-            limit(100)
-          );
-          const bookingSnap = await getDocs(bookingsQuery);
-          bookingDocs = bookingSnap.docs;
-        } catch (orderErr) {
-          console.warn('Fallback: Querying bookings without orderBy:', orderErr);
-          const fallbackSnap = await getDocs(collection(db, 'strategy_call_bookings'));
-          bookingDocs = fallbackSnap.docs;
-        }
-
-        const bookingItems: StrategyCallBookingRecord[] = bookingDocs.map((docSnap) => {
-          const data = docSnap.data();
-
-          // Robust extraction of Date selected & Time selected
-          let dateSelected = data.dateSelected;
-          let timeSelected = data.timeSelected;
-
-          if (!dateSelected && data.selectedDate) {
-            // Parse legacy selectedDate e.g. "Tomorrow, 3:00 PM IST (20 mins)"
-            const parts = data.selectedDate.split(',');
-            if (parts.length > 1) {
-              dateSelected = parts[0].trim();
-              timeSelected = parts.slice(1).join(',').trim();
-            } else {
-              dateSelected = data.selectedDate;
-              timeSelected = 'Standard Slot (20 mins)';
+          const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('Firestore timeout')), 2500));
+          let bookingDocs: any[] = [];
+          try {
+            const bookingsQuery = query(
+              collection(db, 'strategy_call_bookings'),
+              orderBy('createdAt', 'desc'),
+              limit(100)
+            );
+            const bookingSnap = (await Promise.race([getDocs(bookingsQuery), timeoutPromise])) as any;
+            if (bookingSnap && bookingSnap.docs) {
+              bookingDocs = bookingSnap.docs;
+            }
+          } catch {
+            try {
+              const fallbackSnap = (await Promise.race([getDocs(collection(db, 'strategy_call_bookings')), timeoutPromise])) as any;
+              if (fallbackSnap && fallbackSnap.docs) {
+                bookingDocs = fallbackSnap.docs;
+              }
+            } catch {
+              // Timeout or offline
             }
           }
 
-          return {
-            id: docSnap.id,
-            name: data.name || data.fullName || 'Anonymous Founder',
-            fullName: data.fullName || data.name || 'Anonymous Founder',
-            email: data.email || '—',
-            company: data.company || data.companyName || '—',
-            companyName: data.companyName || data.company || '—',
-            linkedinUrl: data.linkedinUrl || data.linkedin_url || '',
-            dateSelected: dateSelected || 'Upcoming Slot',
-            timeSelected: timeSelected || '20 min call',
-            selectedDate: data.selectedDate || `${dateSelected || 'Slot'} at ${timeSelected || ''}`,
-            primaryGoal: data.primaryGoal || 'Pipeline Growth',
-            selectedPlan: data.selectedPlan || 'Growth Plan',
-            status: data.status || 'confirmed',
-            emailSent: !!data.emailSent,
-            createdAt: data.createdAt?.toDate ? data.createdAt.toDate().toISOString() : data.createdAt || data.timestamp || new Date().toISOString(),
-          };
-        });
+          if (bookingDocs.length > 0) {
+            allBookings = bookingDocs.map((docSnap) => {
+              const data = docSnap.data();
+              let dateSelected = data.dateSelected;
+              let timeSelected = data.timeSelected;
 
-        // Sort descending by date if not already sorted
-        bookingItems.sort((a, b) => {
-          const timeA = new Date(a.createdAt || 0).getTime();
-          const timeB = new Date(b.createdAt || 0).getTime();
-          return timeB - timeA;
-        });
+              if (!dateSelected && data.selectedDate) {
+                const parts = data.selectedDate.split(',');
+                if (parts.length > 1) {
+                  dateSelected = parts[0].trim();
+                  timeSelected = parts.slice(1).join(',').trim();
+                } else {
+                  dateSelected = data.selectedDate;
+                  timeSelected = 'Standard Slot (20 mins)';
+                }
+              }
 
-        setBookings(bookingItems);
-      } catch (bErr) {
-        console.error('Failed to load bookings from Firestore:', bErr);
+              return {
+                id: docSnap.id,
+                name: data.name || data.fullName || 'Anonymous Founder',
+                fullName: data.fullName || data.name || 'Anonymous Founder',
+                email: data.email || '—',
+                company: data.company || data.companyName || '—',
+                companyName: data.companyName || data.company || '—',
+                linkedinUrl: data.linkedinUrl || data.linkedin_url || '',
+                dateSelected: dateSelected || 'Upcoming Slot',
+                timeSelected: timeSelected || '20 min call',
+                selectedDate: data.selectedDate || `${dateSelected || 'Slot'} at ${timeSelected || ''}`,
+                primaryGoal: data.primaryGoal || 'Pipeline Growth',
+                selectedPlan: data.selectedPlan || 'Growth Plan',
+                status: data.status || 'confirmed',
+                emailSent: !!data.emailSent,
+                createdAt: data.createdAt?.toDate ? data.createdAt.toDate().toISOString() : data.createdAt || data.timestamp || new Date().toISOString(),
+              };
+            });
+          }
+        } catch (bErr) {
+          console.warn('Firestore bookings query notice:', bErr);
+        }
+
+        // 2. Fetch LinkedIn Audit Leads from Firestore with 2.5s timeout
+        try {
+          const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('Firestore timeout')), 2500));
+          const leadsSnap = (await Promise.race([
+            getDocs(query(collection(db, 'linkedin_audit_leads'), limit(100))),
+            timeoutPromise,
+          ])) as any;
+
+          if (leadsSnap && leadsSnap.docs) {
+            allLeads = leadsSnap.docs.map((d: any) => {
+              const data = d.data();
+              return {
+                id: d.id,
+                name: data.name || 'Founder',
+                email: data.email || '—',
+                company: data.company || '—',
+                linkedin_url: data.linkedin_url || data.profileUrl || '',
+                authority_score: data.authority_score || 7.5,
+                timestamp: data.timestamp?.toDate ? data.timestamp.toDate().toLocaleString() : data.timestamp || new Date().toLocaleString(),
+              };
+            });
+          }
+        } catch (lErr) {
+          console.warn('Firestore leads query notice:', lErr);
+        }
       }
 
-      // 2. Fetch LinkedIn Audit Leads
+      // 3. Fallback / Merge with server-stored backups
       try {
-        const leadsSnap = await getDocs(
-          query(collection(db, 'linkedin_audit_leads'), limit(100))
-        );
-        const leadItems: AuditLeadRecord[] = leadsSnap.docs.map((d) => {
-          const data = d.data();
-          return {
-            id: d.id,
-            name: data.name || 'Founder',
-            email: data.email || '—',
-            company: data.company || '—',
-            linkedin_url: data.linkedin_url || data.profileUrl || '',
-            authority_score: data.authority_score || 7.5,
-            timestamp: data.timestamp?.toDate ? data.timestamp.toDate().toLocaleString() : data.timestamp || new Date().toLocaleString(),
-          };
-        });
-        setLeads(leadItems);
-      } catch (lErr) {
-        console.error('Failed to load audit leads from Firestore:', lErr);
+        const [serverBookingsRes, serverLeadsRes] = await Promise.allSettled([
+          fetch('/api/admin/bookings').then((r) => r.json()),
+          fetch('/api/admin/leads').then((r) => r.json()),
+        ]);
+
+        if (serverBookingsRes.status === 'fulfilled' && serverBookingsRes.value?.success && Array.isArray(serverBookingsRes.value.bookings)) {
+          const sBookings = serverBookingsRes.value.bookings;
+          for (const sb of sBookings) {
+            if (!allBookings.some((b) => b.id === sb.bookingId || (b.email === sb.email && b.dateSelected === sb.dateSelected))) {
+              allBookings.push({
+                ...sb,
+                id: sb.bookingId || sb.id || `bk_${Math.random()}`,
+              });
+            }
+          }
+        }
+
+        if (serverLeadsRes.status === 'fulfilled' && serverLeadsRes.value?.success && Array.isArray(serverLeadsRes.value.leads)) {
+          const sLeads = serverLeadsRes.value.leads;
+          for (const sl of sLeads) {
+            if (!allLeads.some((l) => l.id === sl.id || (l.email === sl.email && l.linkedin_url === sl.linkedin_url))) {
+              allLeads.push(sl);
+            }
+          }
+        }
+      } catch (srvErr) {
+        console.warn('Notice querying server backups:', srvErr);
       }
+
+      // Sort bookings descending by creation date
+      allBookings.sort((a, b) => {
+        const timeA = new Date(a.createdAt || 0).getTime();
+        const timeB = new Date(b.createdAt || 0).getTime();
+        return timeB - timeA;
+      });
+
+      setBookings(allBookings);
+      setLeads(allLeads);
     } catch (err) {
       console.error('Error fetching admin data:', err);
     } finally {

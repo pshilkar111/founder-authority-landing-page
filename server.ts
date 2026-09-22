@@ -12,6 +12,10 @@ const PORT = 3000;
 app.use(express.json({ limit: '10mb' }));
 
 // Lazy Google Gen AI helper
+// In-memory data store for reliability
+const serverBookings: any[] = [];
+const serverLeads: any[] = [];
+
 let aiClient: GoogleGenAI | null = null;
 function getAIClient(): GoogleGenAI | null {
   const apiKey = process.env.GEMINI_API_KEY;
@@ -476,6 +480,9 @@ app.post('/api/book-strategy-call', async (req, res) => {
 
     console.log(`[Booking Service] Strategy call prepared for ${resolvedEmail} (Date: ${resolvedDateSelected}, Time: ${resolvedTimeSelected})`);
 
+    // Store in-memory buffer so admin dashboard can always access bookings
+    serverBookings.unshift(bookingPayload);
+
     return res.json({
       success: true,
       booking: bookingPayload,
@@ -487,6 +494,34 @@ app.post('/api/book-strategy-call', async (req, res) => {
       error: error?.message || 'Failed to process strategy call booking',
     });
   }
+});
+
+// Admin endpoints for reliable data synchronization
+app.get('/api/admin/bookings', (req, res) => {
+  res.json({
+    success: true,
+    bookings: serverBookings,
+  });
+});
+
+app.post('/api/save-lead', (req, res) => {
+  const leadData = {
+    id: `lead_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+    ...req.body,
+    createdAt: new Date().toISOString(),
+  };
+  serverLeads.unshift(leadData);
+  res.json({
+    success: true,
+    lead: leadData,
+  });
+});
+
+app.get('/api/admin/leads', (req, res) => {
+  res.json({
+    success: true,
+    leads: serverLeads,
+  });
 });
 
 // Start server with Vite middleware
