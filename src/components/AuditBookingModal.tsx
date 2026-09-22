@@ -14,7 +14,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { StrategyCallBookingRecord } from '../types';
-import { buildGoogleCalendarUrl, generateGoogleMeetLink, buildIcsData } from '../utils/calendar';
+import { buildGoogleCalendarUrl, buildIcsData } from '../utils/calendar';
 
 interface AuditBookingModalProps {
   isOpen: boolean;
@@ -181,22 +181,24 @@ export const AuditBookingModal: React.FC<AuditBookingModalProps> = ({
     const fullSlotString = `${formData.dateSelected} at ${formData.timeSelected} (20 mins)`;
 
     const bookingId = `bk_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
-    const meetData = generateGoogleMeetLink();
+    const eventTitle = `Founder Authority Strategy Call: ${formData.fullName.trim()}`;
+    const eventDetails = `20-Minute Executive Strategy Call with Founder Authority.\n\nFounder: ${formData.fullName.trim()}\nCompany: ${formData.companyName.trim() || 'Venture'}\nLinkedIn: ${formData.linkedinUrl.trim()}\n\nStrategy session scheduled for ${fullSlotString}. Video call link will be provided prior to the session.`;
+
     const gCalUrl = buildGoogleCalendarUrl({
-      title: `Founder Authority Strategy Call: ${formData.fullName.trim()} x Founder Authority`,
+      title: eventTitle,
       dateStr: formData.dateSelected.trim(),
       timeStr: formData.timeSelected.trim(),
-      details: `20-Minute Executive Strategy Call with Founder Authority.\n\nFounder: ${formData.fullName.trim()}\nCompany: ${formData.companyName.trim() || 'Venture'}\nLinkedIn: ${formData.linkedinUrl.trim()}\nMeeting Link: ${meetData.link}\n\nPlease join the Google Meet at your scheduled slot.`,
-      location: meetData.link,
+      details: eventDetails,
+      location: 'Google Meet',
       attendeeEmail: formData.email.trim(),
     });
     const icsContent = buildIcsData({
       bookingId,
-      title: `Founder Authority Strategy Call: ${formData.fullName.trim()}`,
+      title: eventTitle,
       dateStr: formData.dateSelected.trim(),
       timeStr: formData.timeSelected.trim(),
-      details: `20-Minute Executive Strategy Call with Founder Authority. Meeting Link: ${meetData.link}`,
-      location: meetData.link,
+      details: eventDetails,
+      location: 'Google Meet',
       attendeeName: formData.fullName.trim(),
       attendeeEmail: formData.email.trim(),
     });
@@ -214,7 +216,6 @@ export const AuditBookingModal: React.FC<AuditBookingModalProps> = ({
       selectedDate: fullSlotString,
       primaryGoal: formData.primaryGoal,
       selectedPlan: formData.selectedPlan,
-      googleMeetLink: meetData.link,
       googleCalendarUrl: gCalUrl,
       icsData: icsContent,
       status: 'confirmed',

@@ -1,24 +1,26 @@
 /**
- * Utilities for accurate Google Calendar, Google Meet, and iCal generation.
- * Handles India Standard Time (IST, UTC+5:30) conversions to UTC ISO format.
+ * Utilities for accurate Google Calendar and iCal generation.
+ * Generates exact scheduled slots matching the user's selected time (e.g. 3:30 PM IST).
  */
 
 export interface CalendarSlotData {
   startIso: string;
   endIso: string;
+  localStartIso: string;
+  localEndIso: string;
   startDate: Date;
   endDate: Date;
 }
 
-export function parseSlotToUtc(dateStr: string, timeStr: string): CalendarSlotData {
+export function parseSlotDetails(dateStr: string, timeStr: string): CalendarSlotData {
   const monthsMap: Record<string, number> = {
-    jan: 0, feb: 1, mar: 2, apr: 3, may: 4, jun: 5,
-    jul: 6, aug: 7, sep: 8, oct: 9, nov: 10, dec: 11,
+    jan: 1, feb: 2, mar: 3, apr: 4, may: 5, jun: 6,
+    jul: 7, aug: 8, sep: 9, oct: 10, nov: 11, dec: 12,
   };
 
   const now = new Date();
   let year = now.getFullYear();
-  let month = now.getMonth();
+  let month = now.getMonth() + 1;
   let day = now.getDate();
 
   // Match month, day, year if present: e.g. "Today, Sep 22, 2026" or "Wednesday, Sep 23, 2026"
@@ -30,20 +32,17 @@ export function parseSlotToUtc(dateStr: string, timeStr: string): CalendarSlotDa
       day = parseInt(dMatch[2], 10);
       if (dMatch[3]) year = parseInt(dMatch[3], 10);
     }
-  } else {
-    const lower = dateStr.toLowerCase();
-    if (lower.includes('tomorrow')) {
-      const tomorrow = new Date(now);
-      tomorrow.setDate(tomorrow.getDate() + 1);
-      year = tomorrow.getFullYear();
-      month = tomorrow.getMonth();
-      day = tomorrow.getDate();
-    }
+  } else if (dateStr.toLowerCase().includes('tomorrow')) {
+    const tomorrow = new Date(now);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    year = tomorrow.getFullYear();
+    month = tomorrow.getMonth() + 1;
+    day = tomorrow.getDate();
   }
 
-  // Parse time: "5:00 PM IST", "11:30 AM IST", etc.
-  let hour = 17; // default 5:00 PM
-  let minute = 0;
+  // Parse time: "3:30 PM IST", "11:30 AM IST", etc.
+  let hour = 15; // default 3:30 PM
+  let minute = 30;
   const tMatch = timeStr.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
   if (tMatch) {
     hour = parseInt(tMatch[1], 10);
@@ -53,32 +52,24 @@ export function parseSlotToUtc(dateStr: string, timeStr: string): CalendarSlotDa
     if (meridiem === 'AM' && hour === 12) hour = 0;
   }
 
-  // IST offset is UTC+5:30 -> UTC = IST - 5h 30m = -330 minutes
-  const startUtcMs = Date.UTC(year, month, day, hour, minute) - (5 * 60 + 30) * 60 * 1000;
-  const endUtcMs = startUtcMs + 20 * 60 * 1000; // 20 minute executive strategy slot
+  const pad = (n: number) => n.toString().padStart(2, '0');
+  const localStartIso = `${year}${pad(month)}${pad(day)}T${pad(hour)}${pad(minute)}00`;
 
-  const startDate = new Date(startUtcMs);
-  const endDate = new Date(endUtcMs);
+  const endMinuteTotal = hour * 60 + minute + 20; // 20 minute strategy slot
+  const endHour = Math.floor(endMinuteTotal / 60);
+  const endMin = endMinuteTotal % 60;
+  const localEndIso = `${year}${pad(month)}${pad(day)}T${pad(endHour)}${pad(endMin)}00`;
 
-  const startIso = startDate.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
-  const endIso = endDate.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+  const startDate = new Date(year, month - 1, day, hour, minute);
+  const endDate = new Date(year, month - 1, day, endHour, endMin);
 
-  return { startIso, endIso, startDate, endDate };
-}
-
-export function generateGoogleMeetLink(): { link: string; code: string } {
-  const chars = 'abcdefghijklmnopqrstuvwxyz';
-  const gen = (len: number) => {
-    let s = '';
-    for (let i = 0; i < len; i++) {
-      s += chars[Math.floor(Math.random() * chars.length)];
-    }
-    return s;
-  };
-  const code = `fnd-${gen(4)}-${gen(3)}`;
   return {
-    link: `https://meet.google.com/${code}`,
-    code,
+    startIso: localStartIso,
+    endIso: localEndIso,
+    localStartIso,
+    localEndIso,
+    startDate,
+    endDate,
   };
 }
 
@@ -87,25 +78,30 @@ export function buildGoogleCalendarUrl({
   dateStr,
   timeStr,
   details,
-  location,
+  location = 'Google Meet',
   attendeeEmail,
 }: {
   title: string;
   dateStr: string;
   timeStr: string;
-  details: string;
-  location: string;
+  details?: string;
+  location?: string;
   attendeeEmail?: string;
 }): string {
-  const { startIso, endIso } = parseSlotToUtc(dateStr, timeStr);
+  const { localStartIso, localEndIso } = parseSlotDetails(dateStr, timeStr);
 
   const url = new URL('https://calendar.google.com/calendar/render');
   url.searchParams.set('action', 'TEMPLATE');
   url.searchParams.set('text', title);
-  url.searchParams.set('dates', `${startIso}/${endIso}`);
+  // Using exact local time without UTC offset so it maps to the exact booked time (e.g. 3:30 PM)
+  url.searchParams.set('dates', `${localStartIso}/${localEndIso}`);
   url.searchParams.set('ctz', 'Asia/Kolkata');
-  url.searchParams.set('details', details);
-  url.searchParams.set('location', location);
+  if (details) {
+    url.searchParams.set('details', details);
+  }
+  if (location) {
+    url.searchParams.set('location', location);
+  }
   if (attendeeEmail && attendeeEmail.includes('@')) {
     url.searchParams.set('add', attendeeEmail);
   }
@@ -118,7 +114,7 @@ export function buildIcsData({
   dateStr,
   timeStr,
   details,
-  location,
+  location = 'Google Meet',
   attendeeName,
   attendeeEmail,
 }: {
@@ -127,11 +123,11 @@ export function buildIcsData({
   dateStr: string;
   timeStr: string;
   details: string;
-  location: string;
+  location?: string;
   attendeeName: string;
   attendeeEmail: string;
 }): string {
-  const { startIso, endIso } = parseSlotToUtc(dateStr, timeStr);
+  const { localStartIso, localEndIso } = parseSlotDetails(dateStr, timeStr);
   const dtStamp = new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
   const cleanDesc = details.replace(/\n/g, '\\n');
 
@@ -144,8 +140,8 @@ export function buildIcsData({
     'BEGIN:VEVENT',
     `UID:${bookingId}@founderauthority.com`,
     `DTSTAMP:${dtStamp}`,
-    `DTSTART:${startIso}`,
-    `DTEND:${endIso}`,
+    `DTSTART:${localStartIso}`,
+    `DTEND:${localEndIso}`,
     `SUMMARY:${title}`,
     `DESCRIPTION:${cleanDesc}`,
     `LOCATION:${location}`,
