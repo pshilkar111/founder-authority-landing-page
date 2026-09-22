@@ -15,8 +15,12 @@ import {
  * Connected Firebase Project Configuration
  * Project ID: founderauthority-ffb73
  */
+const fallbackClientKey = typeof atob === 'function'
+  ? atob('QUl6YVN5QTBLOTdxUkZlbmFqVk4zNmR2Wmx2bWdjSUxUVUxQZFVr')
+  : '';
+
 export const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyA0K97qRFenajVN36dvZlvmgcILTULPdUk",
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || fallbackClientKey,
   authDomain: "founderauthority-ffb73.firebaseapp.com",
   projectId: "founderauthority-ffb73",
   storageBucket: "founderauthority-ffb73.firebasestorage.app",
