@@ -36,6 +36,12 @@ export const Footer: React.FC<FooterProps> = () => {
           <a href="#pricing" className="hover:text-[#FFFFFF] transition-colors">
             Pricing
           </a>
+          <a href="/sitemap.xml" target="_blank" rel="noopener noreferrer" className="hover:text-[#FFFFFF] transition-colors">
+            Sitemap
+          </a>
+          <a href="/llms.txt" target="_blank" rel="noopener noreferrer" className="text-[#A1A1AA]/70 hover:text-[#FF6A00] transition-colors" title="AI Search & LLM Context Engine">
+            AI Context (llms.txt)
+          </a>
 
           <a
             href="mailto:hello@founderauthority.com"

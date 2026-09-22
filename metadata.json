@@ -1,6 +1,6 @@
 {
   "name": "Founder Authority",
-  "description": "We help founders become more visible, trusted and remembered on LinkedIn.",
+  "description": "Turn your personal LinkedIn profile into an inbound client magnet. Done-for-you ghostwriting, executive positioning, and content strategy for B2B founders.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

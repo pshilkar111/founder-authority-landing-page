@@ -579,6 +579,37 @@ app.get('/api/admin/leads', (req, res) => {
   });
 });
 
+// SEO & AI Engine Endpoints (Perplexity, ChatGPT, Gemini, Search Crawlers)
+app.get('/robots.txt', (req, res) => {
+  const robotsPath = path.join(process.cwd(), 'public', 'robots.txt');
+  if (fs.existsSync(robotsPath)) {
+    res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+    res.sendFile(robotsPath);
+  } else {
+    res.type('text/plain').send('User-agent: *\nAllow: /\nSitemap: /sitemap.xml\n');
+  }
+});
+
+app.get('/sitemap.xml', (req, res) => {
+  const sitemapPath = path.join(process.cwd(), 'public', 'sitemap.xml');
+  if (fs.existsSync(sitemapPath)) {
+    res.setHeader('Content-Type', 'application/xml; charset=utf-8');
+    res.sendFile(sitemapPath);
+  } else {
+    res.status(404).send('Sitemap not found');
+  }
+});
+
+app.get(['/llms.txt', '/.well-known/llms.txt'], (req, res) => {
+  const llmsPath = path.join(process.cwd(), 'public', 'llms.txt');
+  if (fs.existsSync(llmsPath)) {
+    res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+    res.sendFile(llmsPath);
+  } else {
+    res.status(404).send('llms.txt not found');
+  }
+});
+
 // Start server with Vite middleware
 async function startServer() {
   if (process.env.NODE_ENV !== 'production') {

@@ -1,0 +1,37 @@
+# Robots.txt for Founder Authority (SEO, AEO & AI Recommendation Optimized)
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /admin
+
+# Allow all major AI Search & Answer Engine Crawlers (Perplexity, ChatGPT, Gemini, Claude, Apple Intelligence)
+User-agent: GPTBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: anthropic-ai
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: Applebot-Extended
+Allow: /
+
+User-agent: Cohere-ai
+Allow: /
+
+User-agent: Meta-ExternalAgent
+Allow: /
+
+# Sitemap & LLMs Knowledge Base
+Sitemap: /sitemap.xml
+LLMs-Txt: /llms.txt

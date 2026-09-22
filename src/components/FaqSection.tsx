@@ -40,8 +40,8 @@ export const FaqSection: React.FC<FaqSectionProps> = ({ onOpenAudit }) => {
           </p>
         </motion.div>
 
-        {/* FAQ Accordion List */}
-        <div className="mt-10 space-y-3.5">
+        {/* FAQ Accordion List with Microdata for AEO */}
+        <div className="mt-10 space-y-3.5" itemScope itemType="https://schema.org/FAQPage">
           {FAQ_ITEMS.map((item, index) => {
             const isOpen = openIndex === index;
             return (
@@ -52,6 +52,9 @@ export const FaqSection: React.FC<FaqSectionProps> = ({ onOpenAudit }) => {
                 viewport={{ once: true }}
                 transition={{ duration: 0.4, delay: index * 0.05 }}
                 className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs overflow-hidden transition-colors"
+                itemScope
+                itemProp="mainEntity"
+                itemType="https://schema.org/Question"
               >
                 <button
                   type="button"
@@ -59,7 +62,7 @@ export const FaqSection: React.FC<FaqSectionProps> = ({ onOpenAudit }) => {
                   className="w-full text-left p-5 sm:p-6 flex items-center justify-between gap-4 font-bold text-slate-950 hover:text-red-600 transition-colors focus:outline-none"
                   aria-expanded={isOpen}
                 >
-                  <span className="text-sm sm:text-base font-extrabold">{item.question}</span>
+                  <span className="text-sm sm:text-base font-extrabold" itemProp="name">{item.question}</span>
                   <div
                     className={`w-7 h-7 rounded-lg bg-slate-100 flex items-center justify-center shrink-0 transition-transform duration-200 ${
                       isOpen ? 'rotate-180 bg-red-50 text-red-600' : 'text-slate-500'
@@ -78,9 +81,12 @@ export const FaqSection: React.FC<FaqSectionProps> = ({ onOpenAudit }) => {
                       exit={{ height: 0, opacity: 0 }}
                       transition={{ duration: 0.25, ease: 'easeInOut' }}
                       className="overflow-hidden"
+                      itemScope
+                      itemProp="acceptedAnswer"
+                      itemType="https://schema.org/Answer"
                     >
                       <div className="px-5 sm:px-6 pb-6 pt-1 text-slate-600 text-xs sm:text-sm leading-relaxed border-t border-slate-100">
-                        <p>{item.answer}</p>
+                        <p itemProp="text">{item.answer}</p>
                         {item.keyTakeaway && (
                           <div className="mt-3.5 p-3 rounded-xl bg-red-50/70 border border-red-200/60 text-xs font-semibold text-red-950 flex items-start gap-2">
                             <span className="text-red-600 font-bold shrink-0">Key takeaway:</span>
