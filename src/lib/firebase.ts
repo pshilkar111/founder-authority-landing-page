@@ -10,20 +10,36 @@ import {
   onAuthStateChanged,
   User,
 } from 'firebase/auth';
-import firebaseConfig from '../../firebase-applet-config.json';
 
-// Initialize Firebase safely
-const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+/**
+ * Connected Firebase Project Configuration
+ * Project ID: founderauthority-ffb73
+ */
+export const firebaseConfig = {
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "YOUR_API_KEY",
+  authDomain: "founderauthority-ffb73.firebaseapp.com",
+  projectId: "founderauthority-ffb73",
+  storageBucket: "founderauthority-ffb73.firebasestorage.app",
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "YOUR_SENDER_ID",
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || "YOUR_APP_ID",
+};
 
-// Use the database ID from config or default
-export const db = firebaseConfig.firestoreDatabaseId
-  ? getFirestore(app, firebaseConfig.firestoreDatabaseId)
-  : getFirestore(app);
+// Initialize Firebase App safely
+export const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 
+// Initialize Cloud Firestore database for project 'founderauthority-ffb73'
+export const db = getFirestore(app);
+
+// Initialize Firebase Authentication
 export const auth = getAuth(app);
-export const googleProvider = new GoogleAuthProvider();
 
-// List of predefined administrator emails
+// Configure Google Sign-In Provider
+export const googleProvider = new GoogleAuthProvider();
+googleProvider.setCustomParameters({
+  prompt: 'select_account',
+});
+
+// List of predefined administrator emails for founder authority
 export const DEFAULT_ADMIN_EMAILS = [
   'pshilkar111@gmail.com',
   'admin@founderauthority.in',
@@ -43,7 +59,7 @@ export async function checkIsAdminUser(user: User | null): Promise<boolean> {
     return true;
   }
 
-  // 2. Check Firestore admin_users collection if available
+  // 2. Check Firestore admin_users collection if document exists
   try {
     if (db) {
       const adminDocRef = doc(db, 'admin_users', normalizedEmail);
@@ -56,7 +72,7 @@ export async function checkIsAdminUser(user: User | null): Promise<boolean> {
       }
     }
   } catch (err) {
-    console.warn('Error verifying admin status in Firestore:', err);
+    console.warn('Notice verifying admin status in Firestore:', err);
   }
 
   return false;
@@ -68,6 +84,9 @@ export {
   createUserWithEmailAndPassword,
   signOut,
   onAuthStateChanged,
+  doc,
+  getDoc,
+  setDoc,
 };
 export type { User };
 
