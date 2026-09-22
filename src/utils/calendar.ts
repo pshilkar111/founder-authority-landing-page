@@ -78,7 +78,7 @@ export function buildGoogleCalendarUrl({
   dateStr,
   timeStr,
   details,
-  location = 'Google Meet',
+  location,
   attendeeEmail,
 }: {
   title: string;
@@ -93,9 +93,8 @@ export function buildGoogleCalendarUrl({
   const url = new URL('https://calendar.google.com/calendar/render');
   url.searchParams.set('action', 'TEMPLATE');
   url.searchParams.set('text', title);
-  // Using exact local time without UTC offset so it maps to the exact booked time (e.g. 3:30 PM)
+  // Using exact local time without UTC offset or ctz so Google Calendar books the exact selected hour
   url.searchParams.set('dates', `${localStartIso}/${localEndIso}`);
-  url.searchParams.set('ctz', 'Asia/Kolkata');
   if (details) {
     url.searchParams.set('details', details);
   }

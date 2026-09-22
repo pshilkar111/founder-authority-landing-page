@@ -247,7 +247,9 @@ export const AuditBookingModal: React.FC<AuditBookingModalProps> = ({
         if (apiRes.ok) {
           const apiData = await apiRes.json();
           if (apiData.success && apiData.booking) {
-            bookingRecord = { ...bookingRecord, ...apiData.booking };
+            if (apiData.booking.bookingId) {
+              bookingRecord.id = apiData.booking.bookingId;
+            }
           }
         }
       } catch (apiErr) {

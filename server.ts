@@ -237,15 +237,21 @@ Return ONLY valid JSON matching this exact structure:
 });
 
 // Helper to parse slot string into accurate future Dates in UTC
-function parseSlotToDates(slotString: string): { startDate: Date; endDate: Date } {
+// Parse slot string into clean local start/end ISO strings and Date objects
+function parseSlotToLocalIso(slotString: string): {
+  startIso: string;
+  endIso: string;
+  startDate: Date;
+  endDate: Date;
+} {
   const now = new Date();
   let year = now.getFullYear();
-  let month = now.getMonth();
+  let month = now.getMonth() + 1; // 1-indexed
   let day = now.getDate();
 
   const monthsMap: Record<string, number> = {
-    jan: 0, feb: 1, mar: 2, apr: 3, may: 4, jun: 5,
-    jul: 6, aug: 7, sep: 8, oct: 9, nov: 10, dec: 11,
+    jan: 1, feb: 2, mar: 3, apr: 4, may: 5, jun: 6,
+    jul: 7, aug: 8, sep: 9, oct: 10, nov: 11, dec: 12,
   };
 
   const dMatch = slotString.match(/([A-Za-z]{3,9})\s+(\d{1,2}),?\s*(\d{4})?/);
@@ -256,14 +262,11 @@ function parseSlotToDates(slotString: string): { startDate: Date; endDate: Date 
       day = parseInt(dMatch[2], 10);
       if (dMatch[3]) year = parseInt(dMatch[3], 10);
     }
-  } else {
+  } else if (slotString.toLowerCase().includes('tomorrow')) {
     const targetDate = new Date(now);
-    const lower = slotString.toLowerCase();
-    if (lower.includes('tomorrow')) {
-      targetDate.setDate(targetDate.getDate() + 1);
-    }
+    targetDate.setDate(targetDate.getDate() + 1);
     year = targetDate.getFullYear();
-    month = targetDate.getMonth();
+    month = targetDate.getMonth() + 1;
     day = targetDate.getDate();
   }
 
@@ -279,61 +282,44 @@ function parseSlotToDates(slotString: string): { startDate: Date; endDate: Date 
     if (meridiem === 'AM' && hour === 12) hour = 0;
   }
 
-  // Convert IST (UTC+5:30) to UTC: UTC = IST - 330 minutes
-  const startUtcTimestamp = Date.UTC(year, month, day, hour, minute) - (5 * 60 + 30) * 60 * 1000;
-  const startDate = new Date(startUtcTimestamp);
-  const endDate = new Date(startDate.getTime() + 20 * 60 * 1000); // 20 min slot
+  const pad = (n: number) => n.toString().padStart(2, '0');
+  const startIso = `${year}${pad(month)}${pad(day)}T${pad(hour)}${pad(minute)}00`;
 
-  return { startDate, endDate };
-}
+  const endMinuteTotal = hour * 60 + minute + 20;
+  const endHour = Math.floor(endMinuteTotal / 60);
+  const endMin = endMinuteTotal % 60;
+  const endIso = `${year}${pad(month)}${pad(day)}T${pad(endHour)}${pad(endMin)}00`;
 
-// Format Date object to iCal / Google Calendar format (YYYYMMDDTHHmmssZ)
-function formatDateToUtcString(date: Date): string {
-  return date.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
-}
+  const startDate = new Date(year, month - 1, day, hour, minute);
+  const endDate = new Date(year, month - 1, day, endHour, endMin);
 
-// Generate realistic Google Meet link in abc-defg-hij format
-function generateGoogleMeetLink(): { link: string; code: string } {
-  const chars = 'abcdefghijklmnopqrstuvwxyz';
-  const gen = (len: number) => {
-    let s = '';
-    for (let i = 0; i < len; i++) {
-      s += chars[Math.floor(Math.random() * chars.length)];
-    }
-    return s;
-  };
-  const code = `fnd-${gen(4)}-${gen(3)}`;
-  return {
-    link: `https://meet.google.com/${code}`,
-    code,
-  };
+  return { startIso, endIso, startDate, endDate };
 }
 
 // Generate 1-Click Google Calendar Add URL
 function generateGoogleCalendarUrl({
   title,
-  startDate,
-  endDate,
+  startIso,
+  endIso,
   description,
-  location,
+  location = 'Google Meet',
   attendeeEmail,
 }: {
   title: string;
-  startDate: Date;
-  endDate: Date;
+  startIso: string;
+  endIso: string;
   description: string;
-  location: string;
+  location?: string;
   attendeeEmail: string;
 }): string {
-  const startUtc = formatDateToUtcString(startDate);
-  const endUtc = formatDateToUtcString(endDate);
   const url = new URL('https://calendar.google.com/calendar/render');
   url.searchParams.set('action', 'TEMPLATE');
   url.searchParams.set('text', title);
-  url.searchParams.set('dates', `${startUtc}/${endUtc}`);
-  url.searchParams.set('ctz', 'Asia/Kolkata');
+  url.searchParams.set('dates', `${startIso}/${endIso}`);
   url.searchParams.set('details', description);
-  url.searchParams.set('location', location);
+  if (location) {
+    url.searchParams.set('location', location);
+  }
   if (attendeeEmail && attendeeEmail.includes('@')) {
     url.searchParams.set('add', attendeeEmail);
   }
@@ -344,25 +330,23 @@ function generateGoogleCalendarUrl({
 function generateIcsContent({
   bookingId,
   title,
-  startDate,
-  endDate,
+  startIso,
+  endIso,
   description,
-  location,
+  location = 'Google Meet',
   attendeeName,
   attendeeEmail,
 }: {
   bookingId: string;
   title: string;
-  startDate: Date;
-  endDate: Date;
+  startIso: string;
+  endIso: string;
   description: string;
-  location: string;
+  location?: string;
   attendeeName: string;
   attendeeEmail: string;
 }): string {
-  const dtStamp = formatDateToUtcString(new Date());
-  const dtStart = formatDateToUtcString(startDate);
-  const dtEnd = formatDateToUtcString(endDate);
+  const dtStamp = new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
   const cleanDesc = description.replace(/\n/g, '\\n');
 
   return [
@@ -374,8 +358,8 @@ function generateIcsContent({
     'BEGIN:VEVENT',
     `UID:${bookingId}@founderauthority.com`,
     `DTSTAMP:${dtStamp}`,
-    `DTSTART:${dtStart}`,
-    `DTEND:${dtEnd}`,
+    `DTSTART:${startIso}`,
+    `DTEND:${endIso}`,
     `SUMMARY:${title}`,
     `DESCRIPTION:${cleanDesc}`,
     `LOCATION:${location}`,
@@ -429,35 +413,32 @@ app.post('/api/book-strategy-call', async (req, res) => {
     const resolvedTimeSelected = (timeSelected || '3:00 PM IST').trim();
     const slotString = selectedDate || `${resolvedDateSelected} at ${resolvedTimeSelected}`;
 
-    // 1. Calculate start and end times
-    const { startDate, endDate } = parseSlotToDates(slotString);
+    // 1. Calculate local start/end times matching exact slot
+    const { startIso, endIso, startDate, endDate } = parseSlotToLocalIso(slotString);
 
-    // 2. Generate authentic Google Meet link
-    const { link: googleMeetLink, code: meetCode } = generateGoogleMeetLink();
-
-    // 3. Generate unique booking ID & event metadata
+    // 2. Unique booking ID & clean event metadata (No fake meet URLs)
     const bookingId = `bk_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
-    const meetingTitle = `Founder Authority Strategy Call: ${resolvedName} x Founder Authority`;
-    const meetingDescription = `20-Minute Executive Strategy Call with Founder Authority.\n\nFounder: ${resolvedName}\nEmail: ${resolvedEmail}\nCompany: ${resolvedCompany || 'Not specified'}\nPrimary Goal: ${primaryGoal || 'Inbound Growth'}\nSelected Plan: ${selectedPlan || 'Growth'}\nLinkedIn: ${resolvedLinkedin}\n\nGoogle Meet Link: ${googleMeetLink}\nMeeting Code: ${meetCode}`;
+    const meetingTitle = `Founder Authority Strategy Call: ${resolvedName}`;
+    const meetingDescription = `20-Minute Executive Strategy Call with Founder Authority.\n\nFounder: ${resolvedName}\nEmail: ${resolvedEmail}\nCompany: ${resolvedCompany || 'Not specified'}\nPrimary Goal: ${primaryGoal || 'Inbound Growth'}\nSelected Plan: ${selectedPlan || 'Growth'}\nLinkedIn: ${resolvedLinkedin}\n\nStrategy session scheduled for ${slotString}.`;
 
-    // 4. Generate Google Calendar 1-click URL
+    // 3. Generate Google Calendar 1-click URL
     const googleCalendarUrl = generateGoogleCalendarUrl({
       title: meetingTitle,
-      startDate,
-      endDate,
+      startIso,
+      endIso,
       description: meetingDescription,
-      location: googleMeetLink,
+      location: 'Google Meet',
       attendeeEmail: resolvedEmail,
     });
 
-    // 5. Generate RFC 5545 iCalendar data
+    // 4. Generate RFC 5545 iCalendar data
     const icsContent = generateIcsContent({
       bookingId,
       title: meetingTitle,
-      startDate,
-      endDate,
+      startIso,
+      endIso,
       description: meetingDescription,
-      location: googleMeetLink,
+      location: 'Google Meet',
       attendeeName: resolvedName,
       attendeeEmail: resolvedEmail,
     });
@@ -477,7 +458,7 @@ app.post('/api/book-strategy-call', async (req, res) => {
       selectedDate: slotString,
       primaryGoal: primaryGoal || 'Attracting Customers & Inbound Opportunities',
       selectedPlan: selectedPlan || 'For Founders Ready To Grow (₹40,000/mo)',
-      googleMeetLink,
+      googleMeetLink: '',
       googleCalendarUrl,
       icsData: icsContent,
       startTimeIso: startDate.toISOString(),
