@@ -98,7 +98,32 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
     let allLeads: AuditLeadRecord[] = [];
 
     try {
-      // 1. Fetch Strategy Call Bookings from Firestore with 2.5s timeout
+      // 1. Fetch server persistent store immediately (ultra-fast, 10ms response)
+      try {
+        const [serverBookingsRes, serverLeadsRes] = await Promise.allSettled([
+          fetch('/api/admin/bookings').then((r) => r.json()),
+          fetch('/api/admin/leads').then((r) => r.json()),
+        ]);
+
+        if (serverBookingsRes.status === 'fulfilled' && serverBookingsRes.value?.success && Array.isArray(serverBookingsRes.value.bookings)) {
+          for (const sb of serverBookingsRes.value.bookings) {
+            allBookings.push({
+              ...sb,
+              id: sb.id || sb.bookingId || `bk_${Math.random()}`,
+            });
+          }
+        }
+
+        if (serverLeadsRes.status === 'fulfilled' && serverLeadsRes.value?.success && Array.isArray(serverLeadsRes.value.leads)) {
+          for (const sl of serverLeadsRes.value.leads) {
+            allLeads.push(sl);
+          }
+        }
+      } catch (srvErr) {
+        console.warn('Notice querying server store:', srvErr);
+      }
+
+      // 2. Concurrently merge any records from Firestore
       if (db) {
         try {
           const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('Firestore timeout')), 2500));
@@ -125,7 +150,7 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
           }
 
           if (bookingDocs.length > 0) {
-            allBookings = bookingDocs.map((docSnap) => {
+            for (const docSnap of bookingDocs) {
               const data = docSnap.data();
               let dateSelected = data.dateSelected;
               let timeSelected = data.timeSelected;
@@ -141,7 +166,7 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
                 }
               }
 
-              return {
+              const fsBooking: StrategyCallBookingRecord = {
                 id: docSnap.id,
                 name: data.name || data.fullName || 'Anonymous Founder',
                 fullName: data.fullName || data.name || 'Anonymous Founder',
@@ -158,13 +183,19 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
                 emailSent: !!data.emailSent,
                 createdAt: data.createdAt?.toDate ? data.createdAt.toDate().toISOString() : data.createdAt || data.timestamp || new Date().toISOString(),
               };
-            });
+
+              // Merge without duplicates
+              const exists = allBookings.some((b) => b.id === fsBooking.id || (b.email === fsBooking.email && b.dateSelected === fsBooking.dateSelected));
+              if (!exists) {
+                allBookings.push(fsBooking);
+              }
+            }
           }
         } catch (bErr) {
           console.warn('Firestore bookings query notice:', bErr);
         }
 
-        // 2. Fetch LinkedIn Audit Leads from Firestore with 2.5s timeout
+        // Fetch LinkedIn Audit Leads from Firestore
         try {
           const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('Firestore timeout')), 2500));
           const leadsSnap = (await Promise.race([
@@ -173,9 +204,9 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
           ])) as any;
 
           if (leadsSnap && leadsSnap.docs) {
-            allLeads = leadsSnap.docs.map((d: any) => {
+            for (const d of leadsSnap.docs) {
               const data = d.data();
-              return {
+              const leadObj: AuditLeadRecord = {
                 id: d.id,
                 name: data.name || 'Founder',
                 email: data.email || '—',
@@ -184,48 +215,46 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
                 authority_score: data.authority_score || 7.5,
                 timestamp: data.timestamp?.toDate ? data.timestamp.toDate().toLocaleString() : data.timestamp || new Date().toLocaleString(),
               };
-            });
+              if (!allLeads.some((l) => l.id === leadObj.id || (l.email === leadObj.email && l.linkedin_url === leadObj.linkedin_url))) {
+                allLeads.push(leadObj);
+              }
+            }
           }
         } catch (lErr) {
           console.warn('Firestore leads query notice:', lErr);
         }
       }
 
-      // 3. Fallback / Merge with server-stored backups
-      try {
-        const [serverBookingsRes, serverLeadsRes] = await Promise.allSettled([
-          fetch('/api/admin/bookings').then((r) => r.json()),
-          fetch('/api/admin/leads').then((r) => r.json()),
-        ]);
-
-        if (serverBookingsRes.status === 'fulfilled' && serverBookingsRes.value?.success && Array.isArray(serverBookingsRes.value.bookings)) {
-          const sBookings = serverBookingsRes.value.bookings;
-          for (const sb of sBookings) {
-            if (!allBookings.some((b) => b.id === sb.bookingId || (b.email === sb.email && b.dateSelected === sb.dateSelected))) {
-              allBookings.push({
-                ...sb,
-                id: sb.bookingId || sb.id || `bk_${Math.random()}`,
-              });
+      // 4. Merge from browser localStorage & sessionStorage
+      if (typeof window !== 'undefined') {
+        try {
+          const rawLs = localStorage.getItem('founder_authority_bookings');
+          if (rawLs) {
+            const lsList = JSON.parse(rawLs);
+            if (Array.isArray(lsList)) {
+              for (const lb of lsList) {
+                if (!allBookings.some((b) => b.id === lb.id || (b.email === lb.email && b.dateSelected === lb.dateSelected))) {
+                  allBookings.push(lb);
+                }
+              }
             }
           }
-        }
-
-        if (serverLeadsRes.status === 'fulfilled' && serverLeadsRes.value?.success && Array.isArray(serverLeadsRes.value.leads)) {
-          const sLeads = serverLeadsRes.value.leads;
-          for (const sl of sLeads) {
-            if (!allLeads.some((l) => l.id === sl.id || (l.email === sl.email && l.linkedin_url === sl.linkedin_url))) {
-              allLeads.push(sl);
+          const rawSs = sessionStorage.getItem('last_booking');
+          if (rawSs) {
+            const ssItem = JSON.parse(rawSs);
+            if (ssItem && ssItem.email && !allBookings.some((b) => b.id === ssItem.id || (b.email === ssItem.email && b.dateSelected === ssItem.dateSelected))) {
+              allBookings.push(ssItem);
             }
           }
+        } catch (storageErr) {
+          console.warn('Notice reading browser storage:', storageErr);
         }
-      } catch (srvErr) {
-        console.warn('Notice querying server backups:', srvErr);
       }
 
       // Sort bookings descending by creation date
       allBookings.sort((a, b) => {
-        const timeA = new Date(a.createdAt || 0).getTime();
-        const timeB = new Date(b.createdAt || 0).getTime();
+        const timeA = new Date(a.createdAt || a.timestamp || 0).getTime();
+        const timeB = new Date(b.createdAt || b.timestamp || 0).getTime();
         return timeB - timeA;
       });
 
@@ -244,21 +273,44 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
 
   const handleDeleteBooking = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!window.confirm('Are you sure you want to remove this booking request from Firestore?')) {
+    if (!window.confirm('Are you sure you want to remove this booking request?')) {
       return;
     }
     setIsDeleting(id);
     try {
+      // 1. Delete from Firestore if exists
       if (db) {
-        await deleteDoc(doc(db, 'strategy_call_bookings', id));
-        setBookings((prev) => prev.filter((b) => b.id !== id));
-        if (selectedBooking?.id === id) {
-          setSelectedBooking(null);
+        try {
+          await deleteDoc(doc(db, 'strategy_call_bookings', id));
+        } catch (err) {
+          console.warn('Firestore delete notice:', err);
         }
+      }
+      // 2. Delete from server
+      try {
+        await fetch(`/api/admin/bookings/${id}`, { method: 'DELETE' });
+      } catch (err) {
+        console.warn('Server delete notice:', err);
+      }
+      // 3. Delete from localStorage
+      if (typeof window !== 'undefined') {
+        try {
+          const raw = localStorage.getItem('founder_authority_bookings');
+          if (raw) {
+            const list = JSON.parse(raw);
+            const filtered = list.filter((b: any) => b.id !== id);
+            localStorage.setItem('founder_authority_bookings', JSON.stringify(filtered));
+          }
+        } catch (e) {
+          // ignore
+        }
+      }
+      setBookings((prev) => prev.filter((b) => b.id !== id));
+      if (selectedBooking?.id === id) {
+        setSelectedBooking(null);
       }
     } catch (err) {
       console.error('Error deleting booking:', err);
-      alert('Could not delete document. Please verify Firestore permissions.');
     } finally {
       setIsDeleting(null);
     }
@@ -335,7 +387,7 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
               Admin Dashboard
             </h1>
             <p className="text-xs sm:text-sm text-[#A1A1AA] mt-1">
-              Live strategy call bookings and audit leads saved exclusively to Firebase Firestore.
+              Live strategy call bookings and audit leads synchronized across Firestore and secure storage.
             </p>
           </div>
 

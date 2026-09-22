@@ -1,5 +1,6 @@
 import express from 'express';
 import path from 'path';
+import fs from 'fs';
 import dotenv from 'dotenv';
 import { GoogleGenAI } from '@google/genai';
 import { createServer as createViteServer } from 'vite';
@@ -11,10 +12,62 @@ const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
 
 app.use(express.json({ limit: '10mb' }));
 
-// Lazy Google Gen AI helper
-// In-memory data store for reliability
-const serverBookings: any[] = [];
-const serverLeads: any[] = [];
+// File paths for durable storage
+const DATA_DIR = path.join(process.cwd(), 'data');
+const BOOKINGS_FILE = path.join(DATA_DIR, 'bookings.json');
+const LEADS_FILE = path.join(DATA_DIR, 'leads.json');
+
+// Ensure data directory exists
+if (!fs.existsSync(DATA_DIR)) {
+  try {
+    fs.mkdirSync(DATA_DIR, { recursive: true });
+  } catch (e) {
+    console.warn('Could not create data dir:', e);
+  }
+}
+
+function loadBookings(): any[] {
+  try {
+    if (fs.existsSync(BOOKINGS_FILE)) {
+      const raw = fs.readFileSync(BOOKINGS_FILE, 'utf-8');
+      return JSON.parse(raw);
+    }
+  } catch (err) {
+    console.warn('Error reading bookings file:', err);
+  }
+  return [];
+}
+
+function saveBookings(bookings: any[]) {
+  try {
+    fs.writeFileSync(BOOKINGS_FILE, JSON.stringify(bookings, null, 2), 'utf-8');
+  } catch (err) {
+    console.warn('Error writing bookings file:', err);
+  }
+}
+
+function loadLeads(): any[] {
+  try {
+    if (fs.existsSync(LEADS_FILE)) {
+      const raw = fs.readFileSync(LEADS_FILE, 'utf-8');
+      return JSON.parse(raw);
+    }
+  } catch (err) {
+    console.warn('Error reading leads file:', err);
+  }
+  return [];
+}
+
+function saveLeads(leads: any[]) {
+  try {
+    fs.writeFileSync(LEADS_FILE, JSON.stringify(leads, null, 2), 'utf-8');
+  } catch (err) {
+    console.warn('Error writing leads file:', err);
+  }
+}
+
+const serverBookings: any[] = loadBookings();
+const serverLeads: any[] = loadLeads();
 
 let aiClient: GoogleGenAI | null = null;
 function getAIClient(): GoogleGenAI | null {
@@ -470,8 +523,9 @@ app.post('/api/book-strategy-call', async (req, res) => {
 
     console.log(`[Booking Service] Strategy call prepared for ${resolvedEmail} (Date: ${resolvedDateSelected}, Time: ${resolvedTimeSelected})`);
 
-    // Store in-memory buffer so admin dashboard can always access bookings
+    // Store in-memory buffer and persist to disk so admin dashboard can always access bookings
     serverBookings.unshift(bookingPayload);
+    saveBookings(serverBookings);
 
     return res.json({
       success: true,
@@ -494,6 +548,16 @@ app.get('/api/admin/bookings', (req, res) => {
   });
 });
 
+app.delete('/api/admin/bookings/:id', (req, res) => {
+  const { id } = req.params;
+  const idx = serverBookings.findIndex((b) => b.id === id || b.bookingId === id);
+  if (idx !== -1) {
+    serverBookings.splice(idx, 1);
+    saveBookings(serverBookings);
+  }
+  res.json({ success: true });
+});
+
 app.post('/api/save-lead', (req, res) => {
   const leadData = {
     id: `lead_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
@@ -501,6 +565,7 @@ app.post('/api/save-lead', (req, res) => {
     createdAt: new Date().toISOString(),
   };
   serverLeads.unshift(leadData);
+  saveLeads(serverLeads);
   res.json({
     success: true,
     lead: leadData,

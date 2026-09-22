@@ -1,0 +1,20 @@
+[
+  {
+    "id": "bk_1727000280000_test",
+    "name": "Test",
+    "fullName": "Test",
+    "email": "pshilkar111@gmail.com",
+    "company": "founder authority",
+    "companyName": "founder authority",
+    "linkedinUrl": "https://linkedin.com/in/pramodshilkar",
+    "dateSelected": "Thursday, Sep 24, 2026",
+    "timeSelected": "5:00 PM IST",
+    "selectedDate": "Thursday, Sep 24, 2026 at 5:00 PM IST (20 mins)",
+    "primaryGoal": "Attracting Customers & Inbound Opportunities",
+    "selectedPlan": "For Founders Ready To Grow (₹40,000/mo)",
+    "googleCalendarUrl": "https://calendar.google.com/calendar/render?action=TEMPLATE&text=Founder+Authority+Strategy+Call%3A+Test&dates=20260924T170000/20260924T172000&location=Google+Meet&add=pshilkar111%40gmail.com",
+    "status": "confirmed",
+    "emailSent": false,
+    "createdAt": "2026-09-22T03:10:00.000Z"
+  }
+]

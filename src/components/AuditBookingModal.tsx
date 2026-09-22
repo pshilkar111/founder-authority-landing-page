@@ -278,9 +278,17 @@ export const AuditBookingModal: React.FC<AuditBookingModalProps> = ({
         }
       }
 
-      // 3. Store in sessionStorage for instant retrieval on Thank You page
+      // 3. Store in sessionStorage & localStorage for instant retrieval on Thank You page and admin dashboard
       if (typeof window !== 'undefined') {
         sessionStorage.setItem('last_booking', JSON.stringify(bookingRecord));
+        try {
+          const raw = localStorage.getItem('founder_authority_bookings');
+          const list = raw ? JSON.parse(raw) : [];
+          list.unshift(bookingRecord);
+          localStorage.setItem('founder_authority_bookings', JSON.stringify(list.slice(0, 50)));
+        } catch (lsErr) {
+          console.warn('Could not save to localStorage:', lsErr);
+        }
       }
 
       // 4. Safely close modal and redirect to Thank You page

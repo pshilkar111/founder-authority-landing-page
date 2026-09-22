@@ -1,5 +1,6 @@
 import React from 'react';
-import { Mail } from 'lucide-react';
+import { Mail, Lock } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { BrandLogo } from './BrandLogo';
 
 interface FooterProps {
@@ -43,6 +44,15 @@ export const Footer: React.FC<FooterProps> = () => {
             <Mail className="w-3 h-3 text-[#A1A1AA]" />
             <span>hello@founderauthority.com</span>
           </a>
+
+          <Link
+            to="/admin"
+            className="flex items-center gap-1 text-[#A1A1AA]/70 hover:text-[#FF6A00] transition-colors"
+            title="Administrator Portal"
+          >
+            <Lock className="w-3 h-3" />
+            <span>Admin</span>
+          </Link>
         </div>
       </div>
     </footer>
