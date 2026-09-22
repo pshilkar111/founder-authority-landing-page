@@ -16,12 +16,12 @@ import {
  * Project ID: founderauthority-ffb73
  */
 export const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "YOUR_API_KEY",
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyA0K97qRFenajVN36dvZlvmgcILTULPdUk",
   authDomain: "founderauthority-ffb73.firebaseapp.com",
   projectId: "founderauthority-ffb73",
   storageBucket: "founderauthority-ffb73.firebasestorage.app",
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "YOUR_SENDER_ID",
-  appId: import.meta.env.VITE_FIREBASE_APP_ID || "YOUR_APP_ID",
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "490995453663",
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:490995453663:web:e8756ac8442565f970636a",
 };
 
 // Initialize Firebase App safely
@@ -39,11 +39,9 @@ googleProvider.setCustomParameters({
   prompt: 'select_account',
 });
 
-// List of predefined administrator emails for founder authority
+// Initial administrator email (future admins can also be added via the 'admin_users' Firestore collection)
 export const DEFAULT_ADMIN_EMAILS = [
   'pshilkar111@gmail.com',
-  'admin@founderauthority.in',
-  'admin@founderauthority.com',
 ];
 
 /**

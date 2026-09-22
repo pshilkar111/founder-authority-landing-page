@@ -1,12 +1,12 @@
 {
   "projectId": "founderauthority-ffb73",
-  "appId": "YOUR_APP_ID",
-  "apiKey": "YOUR_API_KEY",
+  "appId": "1:490995453663:web:e8756ac8442565f970636a",
+  "apiKey": "AIzaSyA0K97qRFenajVN36dvZlvmgcILTULPdUk",
   "authDomain": "founderauthority-ffb73.firebaseapp.com",
   "firestoreDatabaseId": "(default)",
   "storageBucket": "founderauthority-ffb73.firebasestorage.app",
-  "messagingSenderId": "YOUR_SENDER_ID",
+  "messagingSenderId": "490995453663",
   "measurementId": "",
-  "oAuthClientId": "",
+  "oAuthClientId": "490995453663-ag53l6352ipcq6hhkvc0jb8l0ej5r86s.apps.googleusercontent.com",
   "recaptchaSiteKey": ""
 }
