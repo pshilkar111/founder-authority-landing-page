@@ -14,6 +14,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { StrategyCallBookingRecord } from '../types';
+import { buildGoogleCalendarUrl, generateGoogleMeetLink, buildIcsData } from '../utils/calendar';
 
 interface AuditBookingModalProps {
   isOpen: boolean;
@@ -56,6 +57,48 @@ export const AuditBookingModal: React.FC<AuditBookingModalProps> = ({
     return options;
   }, []);
 
+  const allTimeOptions = [
+    '10:00 AM IST',
+    '11:30 AM IST',
+    '1:00 PM IST',
+    '2:00 PM IST',
+    '3:30 PM IST',
+    '5:00 PM IST',
+    '6:30 PM IST',
+    '8:00 PM IST',
+  ];
+
+  // Helper to parse time slot to minutes from midnight
+  const parseSlotToMinutes = (slot: string): number => {
+    const match = slot.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
+    if (!match) return 0;
+    let h = parseInt(match[1], 10);
+    const m = parseInt(match[2], 10);
+    const mer = match[3].toUpperCase();
+    if (mer === 'PM' && h < 12) h += 12;
+    if (mer === 'AM' && h === 12) h = 0;
+    return h * 60 + m;
+  };
+
+  // Helper to get current IST minutes from midnight
+  const getCurrentIstMinutes = (): number => {
+    try {
+      const now = new Date();
+      const istTimeStr = new Intl.DateTimeFormat('en-US', {
+        timeZone: 'Asia/Kolkata',
+        hour: 'numeric',
+        minute: 'numeric',
+        hour12: false,
+      }).format(now);
+      const [curH, curM] = istTimeStr.split(':').map(Number);
+      return curH * 60 + (curM || 0);
+    } catch {
+      const now = new Date();
+      const utcMinutes = now.getUTCHours() * 60 + now.getUTCMinutes();
+      return (utcMinutes + 330) % 1440; // UTC+5:30
+    }
+  };
+
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
@@ -64,17 +107,29 @@ export const AuditBookingModal: React.FC<AuditBookingModalProps> = ({
     primaryGoal: 'Attracting Customers & Inbound Opportunities',
     selectedPlan: initialPlan || 'For Founders Ready To Grow (₹40,000/mo)',
     dateSelected: 'Today, Sep 22, 2026',
-    timeSelected: '3:00 PM IST',
+    timeSelected: '5:00 PM IST',
   });
 
-  const timeOptions = [
-    '10:00 AM IST',
-    '11:30 AM IST',
-    '2:00 PM IST',
-    '3:30 PM IST',
-    '5:00 PM IST',
-    '6:30 PM IST',
-  ];
+  const isTodaySelected = formData.dateSelected.toLowerCase().startsWith('today');
+
+  // If today's slot is selected, only show time slots that are at least 2 hours after the current time
+  const availableTimeSlots = useMemo(() => {
+    if (!isTodaySelected) {
+      return allTimeOptions;
+    }
+    const curIstMinutes = getCurrentIstMinutes();
+    const minAllowedMinutes = curIstMinutes + 120; // 2 hours after current time
+    return allTimeOptions.filter((slot) => parseSlotToMinutes(slot) >= minAllowedMinutes);
+  }, [isTodaySelected, formData.dateSelected]);
+
+  // Keep timeSelected valid whenever availableTimeSlots changes
+  useEffect(() => {
+    if (availableTimeSlots.length > 0) {
+      if (!availableTimeSlots.includes(formData.timeSelected)) {
+        setFormData((prev) => ({ ...prev, timeSelected: availableTimeSlots[0] }));
+      }
+    }
+  }, [availableTimeSlots, formData.timeSelected]);
 
   // Reset modal state whenever it is opened
   useEffect(() => {
@@ -83,7 +138,13 @@ export const AuditBookingModal: React.FC<AuditBookingModalProps> = ({
       setIsSubmitting(false);
       setErrorMessage(null);
       if (dateOptions.length > 0) {
-        setFormData((prev) => ({ ...prev, dateSelected: dateOptions[0] }));
+        // If today has available slots >= 2 hours away, default to today; otherwise default to tomorrow
+        const curMinutes = getCurrentIstMinutes();
+        const hasTodaySlots = allTimeOptions.some(
+          (slot) => parseSlotToMinutes(slot) >= curMinutes + 120
+        );
+        const initialDate = hasTodaySlots ? dateOptions[0] : dateOptions[1] || dateOptions[0];
+        setFormData((prev) => ({ ...prev, dateSelected: initialDate }));
       }
     }
   }, [isOpen, dateOptions]);
@@ -119,8 +180,29 @@ export const AuditBookingModal: React.FC<AuditBookingModalProps> = ({
 
     const fullSlotString = `${formData.dateSelected} at ${formData.timeSelected} (20 mins)`;
 
+    const bookingId = `bk_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+    const meetData = generateGoogleMeetLink();
+    const gCalUrl = buildGoogleCalendarUrl({
+      title: `Founder Authority Strategy Call: ${formData.fullName.trim()} x Founder Authority`,
+      dateStr: formData.dateSelected.trim(),
+      timeStr: formData.timeSelected.trim(),
+      details: `20-Minute Executive Strategy Call with Founder Authority.\n\nFounder: ${formData.fullName.trim()}\nCompany: ${formData.companyName.trim() || 'Venture'}\nLinkedIn: ${formData.linkedinUrl.trim()}\nMeeting Link: ${meetData.link}\n\nPlease join the Google Meet at your scheduled slot.`,
+      location: meetData.link,
+      attendeeEmail: formData.email.trim(),
+    });
+    const icsContent = buildIcsData({
+      bookingId,
+      title: `Founder Authority Strategy Call: ${formData.fullName.trim()}`,
+      dateStr: formData.dateSelected.trim(),
+      timeStr: formData.timeSelected.trim(),
+      details: `20-Minute Executive Strategy Call with Founder Authority. Meeting Link: ${meetData.link}`,
+      location: meetData.link,
+      attendeeName: formData.fullName.trim(),
+      attendeeEmail: formData.email.trim(),
+    });
+
     let bookingRecord: StrategyCallBookingRecord = {
-      id: `bk_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+      id: bookingId,
       name: formData.fullName.trim(),
       fullName: formData.fullName.trim(),
       email: formData.email.trim(),
@@ -132,6 +214,9 @@ export const AuditBookingModal: React.FC<AuditBookingModalProps> = ({
       selectedDate: fullSlotString,
       primaryGoal: formData.primaryGoal,
       selectedPlan: formData.selectedPlan,
+      googleMeetLink: meetData.link,
+      googleCalendarUrl: gCalUrl,
+      icsData: icsContent,
       status: 'confirmed',
       emailSent: false,
       timestamp: new Date().toISOString(),
@@ -418,26 +503,56 @@ export const AuditBookingModal: React.FC<AuditBookingModalProps> = ({
 
                   {/* 2. Time Selection */}
                   <div>
-                    <label className="block text-xs font-bold text-[#FFFFFF] mb-2 flex items-center gap-1.5">
-                      <Clock className="w-3.5 h-3.5 text-[#FF6A00]" />
-                      <span>Select Time (20 Mins):</span>
-                    </label>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                      {timeOptions.map((time) => (
-                        <button
-                          type="button"
-                          key={time}
-                          onClick={() => setFormData({ ...formData, timeSelected: time })}
-                          className={`text-center py-2 px-2.5 rounded-xl border text-xs cursor-pointer transition-all ${
-                            formData.timeSelected === time
-                              ? 'bg-[#FF6A00] border-[#FF6A00] text-[#0B0B0F] font-bold'
-                              : 'bg-[#0B0B0F] border-[#262626] text-[#A1A1AA] hover:border-[#383838]'
-                          }`}
-                        >
-                          {time}
-                        </button>
-                      ))}
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="text-xs font-bold text-[#FFFFFF] flex items-center gap-1.5">
+                        <Clock className="w-3.5 h-3.5 text-[#FF6A00]" />
+                        <span>Select Time (20 Mins):</span>
+                      </label>
+                      {isTodaySelected && (
+                        <span className="text-[11px] text-emerald-400 font-medium flex items-center gap-1">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                          <span>Slots 2+ hrs from now</span>
+                        </span>
+                      )}
                     </div>
+
+                    {availableTimeSlots.length > 0 ? (
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                        {availableTimeSlots.map((time) => (
+                          <button
+                            type="button"
+                            key={time}
+                            onClick={() => setFormData({ ...formData, timeSelected: time })}
+                            className={`text-center py-2 px-2.5 rounded-xl border text-xs cursor-pointer transition-all ${
+                              formData.timeSelected === time
+                                ? 'bg-[#FF6A00] border-[#FF6A00] text-[#0B0B0F] font-bold'
+                                : 'bg-[#0B0B0F] border-[#262626] text-[#A1A1AA] hover:border-[#383838]'
+                            }`}
+                          >
+                            {time}
+                          </button>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="p-3.5 rounded-xl bg-[#1A1A24] border border-[#383848] text-center space-y-2">
+                        <p className="text-xs text-[#FFFFFF] font-medium">
+                          All same-day slots for today have passed or require at least 2 hours advance notice.
+                        </p>
+                        <p className="text-[11px] text-[#A1A1AA]">
+                          Please select tomorrow or an upcoming date for complete morning and afternoon availability.
+                        </p>
+                        {dateOptions[1] && (
+                          <button
+                            type="button"
+                            onClick={() => setFormData((prev) => ({ ...prev, dateSelected: dateOptions[1] }))}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#FF6A00] text-[#0B0B0F] text-xs font-bold hover:bg-[#FF8533] transition-colors cursor-pointer"
+                          >
+                            <Calendar className="w-3 h-3" />
+                            <span>Switch to Tomorrow ({dateOptions[1].replace('Tomorrow, ', '')})</span>
+                          </button>
+                        )}
+                      </div>
+                    )}
                   </div>
 
                   <div className="flex gap-2 pt-2">
@@ -452,14 +567,16 @@ export const AuditBookingModal: React.FC<AuditBookingModalProps> = ({
                     <button
                       type="submit"
                       id="confirm-strategy-call-btn"
-                      disabled={isSubmitting}
-                      className="flex-1 bg-[#FF6A00] hover:bg-[#FF8533] disabled:opacity-60 text-[#0B0B0F] font-bold py-2.5 px-4 rounded-xl text-xs flex items-center justify-center gap-2 transition-colors cursor-pointer shadow-lg shadow-[#FF6A00]/20"
+                      disabled={isSubmitting || availableTimeSlots.length === 0}
+                      className="flex-1 bg-[#FF6A00] hover:bg-[#FF8533] disabled:opacity-50 disabled:cursor-not-allowed text-[#0B0B0F] font-bold py-2.5 px-4 rounded-xl text-xs flex items-center justify-center gap-2 transition-colors cursor-pointer shadow-lg shadow-[#FF6A00]/20"
                     >
                       {isSubmitting ? (
                         <>
                           <Loader2 className="w-3.5 h-3.5 animate-spin" />
                           <span>Confirming your booking...</span>
                         </>
+                      ) : availableTimeSlots.length === 0 ? (
+                        <span>Please Select Another Date Above</span>
                       ) : (
                         <>
                           <span>Confirm & Book Strategy Call</span>

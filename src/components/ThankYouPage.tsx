@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import {
   CheckCircle2,
   Calendar,
@@ -11,10 +11,14 @@ import {
   ExternalLink,
   ShieldCheck,
   Sparkles,
-  Database,
+  Video,
+  Copy,
+  Check,
+  Download,
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { StrategyCallBookingRecord } from '../types';
+import { buildGoogleCalendarUrl, buildIcsData } from '../utils/calendar';
 
 interface ThankYouPageProps {
   bookingData?: StrategyCallBookingRecord | null;
@@ -26,6 +30,7 @@ export const ThankYouPage: React.FC<ThankYouPageProps> = ({
   onNavigateHome,
 }) => {
   const [booking, setBooking] = useState<StrategyCallBookingRecord | null>(initialBooking || null);
+  const [copiedMeetLink, setCopiedMeetLink] = useState(false);
 
   useEffect(() => {
     // If no props passed, try reading from sessionStorage
@@ -45,17 +50,52 @@ export const ThankYouPage: React.FC<ThankYouPageProps> = ({
   const founderEmail = booking?.email || 'your email';
   const companyName = booking?.company || booking?.companyName || 'Your Venture';
   const linkedinUrl = booking?.linkedinUrl || '';
-  const dateSelected = booking?.dateSelected || 'Tomorrow, Sep 22, 2026';
-  const timeSelected = booking?.timeSelected || '3:00 PM IST (20 mins)';
+  const dateSelected = booking?.dateSelected || 'Today, Sep 22, 2026';
+  const timeSelected = booking?.timeSelected || '5:00 PM IST (20 mins)';
+  const meetLink = booking?.googleMeetLink || 'https://meet.google.com/fnd-xuvs-xuq';
 
-  // Build a 1-click Google Calendar add link
-  const createGoogleCalendarUrl = () => {
-    const title = encodeURIComponent(`Founder Authority Strategy Call: ${founderName}`);
-    const details = encodeURIComponent(
-      `20-Minute Executive Strategy Call with Founder Authority.\n\nFounder: ${founderName}\nCompany: ${companyName}\nLinkedIn: ${linkedinUrl}\n\nJoin via Google Meet at your scheduled slot.`
-    );
-    const location = encodeURIComponent('Founder Authority Video Conference');
-    return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&details=${details}&location=${location}`;
+  // Build a 1-click Google Calendar add link with exact UTC dates and India Standard Time timezone
+  const calendarUrl = useMemo(() => {
+    if (booking?.googleCalendarUrl && booking.googleCalendarUrl.includes('dates=')) {
+      return booking.googleCalendarUrl;
+    }
+    return buildGoogleCalendarUrl({
+      title: `Founder Authority Strategy Call: ${founderName} x Founder Authority`,
+      dateStr: dateSelected,
+      timeStr: timeSelected,
+      details: `20-Minute Executive Strategy Call with Founder Authority.\n\nFounder: ${founderName}\nCompany: ${companyName}\nLinkedIn: ${linkedinUrl}\n\nGoogle Meet Link: ${meetLink}\n\nPlease join the meeting at your scheduled slot.`,
+      location: meetLink,
+      attendeeEmail: founderEmail,
+    });
+  }, [booking, founderName, companyName, linkedinUrl, dateSelected, timeSelected, meetLink, founderEmail]);
+
+  const handleCopyMeetLink = () => {
+    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+      navigator.clipboard.writeText(meetLink);
+      setCopiedMeetLink(true);
+      setTimeout(() => setCopiedMeetLink(false), 2000);
+    }
+  };
+
+  const handleDownloadIcs = () => {
+    const icsContent = booking?.icsData || buildIcsData({
+      bookingId: booking?.id || `bk_${Date.now()}`,
+      title: `Founder Authority Strategy Call: ${founderName}`,
+      dateStr: dateSelected,
+      timeStr: timeSelected,
+      details: `20-Minute Executive Strategy Call with Founder Authority. Join via Google Meet: ${meetLink}`,
+      location: meetLink,
+      attendeeName: founderName,
+      attendeeEmail: founderEmail,
+    });
+
+    const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
+    const link = document.createElement('a');
+    link.href = window.URL.createObjectURL(blob);
+    link.setAttribute('download', `founder-authority-call-${founderName.toLowerCase().replace(/\s+/g, '-')}.ics`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   return (
@@ -102,8 +142,63 @@ export const ThankYouPage: React.FC<ThankYouPageProps> = ({
               Thank You, {founderName}!
             </h1>
             <p className="text-sm sm:text-base text-[#A1A1AA] leading-relaxed">
-              Your 20-minute Strategy Call request has been securely recorded in our database. We are preparing our executive breakdown of your LinkedIn presence.
+              Your 20-minute Strategy Call request has been securely recorded. We are preparing our executive breakdown of your LinkedIn presence.
             </p>
+          </div>
+
+          {/* Google Meet Direct Room Box */}
+          <div className="bg-[#1A1A24] border border-[#FF6A00]/30 rounded-xl p-5 sm:p-6 mb-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <span className="relative flex h-2.5 w-2.5">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                  </span>
+                  <span className="text-xs font-bold text-emerald-400 uppercase tracking-wider">
+                    Google Meet Room Generated
+                  </span>
+                </div>
+                <div className="text-sm font-semibold text-[#FFFFFF] break-all">
+                  {meetLink}
+                </div>
+                <div className="text-xs text-[#A1A1AA]">
+                  Scheduled for <span className="text-[#FFFFFF] font-medium">{dateSelected}</span> at <span className="text-[#FF6A00] font-semibold">{timeSelected}</span>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={handleCopyMeetLink}
+                  id="copy-meet-link-btn"
+                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-[#262633] hover:bg-[#323242] text-xs font-semibold text-[#FFFFFF] border border-[#383848] transition-colors cursor-pointer"
+                >
+                  {copiedMeetLink ? (
+                    <>
+                      <Check className="w-3.5 h-3.5 text-emerald-400" />
+                      <span>Copied!</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-3.5 h-3.5 text-[#A1A1AA]" />
+                      <span>Copy Link</span>
+                    </>
+                  )}
+                </button>
+
+                <a
+                  href={meetLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  id="open-meet-link-btn"
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-[#FF6A00] hover:bg-[#FF8533] text-xs font-bold text-[#0B0B0F] transition-colors cursor-pointer shadow-md"
+                >
+                  <Video className="w-3.5 h-3.5" />
+                  <span>Join Call</span>
+                </a>
+              </div>
+            </div>
           </div>
 
           {/* Booking Details Grid */}
@@ -198,14 +293,14 @@ export const ThankYouPage: React.FC<ThankYouPageProps> = ({
           <div className="bg-[#1F1F27]/60 border border-[#262626] rounded-xl p-4 mb-8 text-xs text-[#A1A1AA] flex items-center gap-3">
             <Sparkles className="w-4 h-4 text-[#FF6A00] shrink-0" />
             <p className="leading-relaxed">
-              <strong className="text-[#FFFFFF]">Strategy Session Locked:</strong> Your executive call is confirmed. Add the event to your Google or Outlook calendar below, and join via the Google Meet link at your scheduled time.
+              <strong className="text-[#FFFFFF]">Strategy Session Locked:</strong> Your executive call is confirmed for <strong className="text-[#FF6A00]">{dateSelected} at {timeSelected}</strong>. Click below to add the event directly to your Google Calendar or download the calendar invite.
             </p>
           </div>
 
           {/* Actions */}
           <div className="flex flex-col sm:flex-row items-center gap-3 justify-center mb-10">
             <a
-              href={createGoogleCalendarUrl()}
+              href={calendarUrl}
               target="_blank"
               rel="noopener noreferrer"
               id="thank-you-add-calendar-btn"
@@ -216,9 +311,19 @@ export const ThankYouPage: React.FC<ThankYouPageProps> = ({
             </a>
 
             <button
+              onClick={handleDownloadIcs}
+              type="button"
+              id="thank-you-download-ics-btn"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-[#14141A] hover:bg-[#1F1F27] text-[#FFFFFF] font-semibold text-sm border border-[#383838] transition-colors cursor-pointer"
+            >
+              <Download className="w-4 h-4 text-[#A1A1AA]" />
+              Download .ics (Outlook / Apple)
+            </button>
+
+            <button
               onClick={onNavigateHome}
               id="thank-you-return-home-btn"
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-[#1F1F27] hover:bg-[#262633] text-[#FFFFFF] font-semibold text-sm border border-[#383838] transition-colors cursor-pointer"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-[#1F1F27] hover:bg-[#262633] text-[#A1A1AA] hover:text-[#FFFFFF] font-semibold text-sm border border-[#262626] transition-colors cursor-pointer"
             >
               Return to Homepage
             </button>

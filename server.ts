@@ -239,27 +239,37 @@ Return ONLY valid JSON matching this exact structure:
 // Helper to parse slot string into accurate future Dates in UTC
 function parseSlotToDates(slotString: string): { startDate: Date; endDate: Date } {
   const now = new Date();
-  const targetDate = new Date(now);
+  let year = now.getFullYear();
+  let month = now.getMonth();
+  let day = now.getDate();
 
-  const lower = slotString.toLowerCase();
-  if (lower.includes('tomorrow')) {
-    targetDate.setDate(targetDate.getDate() + 1);
-  } else {
-    const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
-    for (let i = 0; i < days.length; i++) {
-      if (lower.includes(days[i])) {
-        const currentDay = targetDate.getDay();
-        let diff = i - currentDay;
-        if (diff <= 0) diff += 7;
-        targetDate.setDate(targetDate.getDate() + diff);
-        break;
-      }
+  const monthsMap: Record<string, number> = {
+    jan: 0, feb: 1, mar: 2, apr: 3, may: 4, jun: 5,
+    jul: 6, aug: 7, sep: 8, oct: 9, nov: 10, dec: 11,
+  };
+
+  const dMatch = slotString.match(/([A-Za-z]{3,9})\s+(\d{1,2}),?\s*(\d{4})?/);
+  if (dMatch) {
+    const mKey = dMatch[1].toLowerCase().slice(0, 3);
+    if (monthsMap[mKey] !== undefined) {
+      month = monthsMap[mKey];
+      day = parseInt(dMatch[2], 10);
+      if (dMatch[3]) year = parseInt(dMatch[3], 10);
     }
+  } else {
+    const targetDate = new Date(now);
+    const lower = slotString.toLowerCase();
+    if (lower.includes('tomorrow')) {
+      targetDate.setDate(targetDate.getDate() + 1);
+    }
+    year = targetDate.getFullYear();
+    month = targetDate.getMonth();
+    day = targetDate.getDate();
   }
 
-  // Parse time (e.g. 11:00 AM or 3:00 PM)
+  // Parse time (e.g. 5:00 PM or 11:30 AM)
   const timeMatch = slotString.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
-  let hour = 11;
+  let hour = 17;
   let minute = 0;
   if (timeMatch) {
     hour = parseInt(timeMatch[1], 10);
@@ -270,11 +280,7 @@ function parseSlotToDates(slotString: string): { startDate: Date; endDate: Date 
   }
 
   // Convert IST (UTC+5:30) to UTC: UTC = IST - 330 minutes
-  const year = targetDate.getFullYear();
-  const month = targetDate.getMonth();
-  const date = targetDate.getDate();
-
-  const startUtcTimestamp = Date.UTC(year, month, date, hour, minute) - (5 * 60 + 30) * 60 * 1000;
+  const startUtcTimestamp = Date.UTC(year, month, day, hour, minute) - (5 * 60 + 30) * 60 * 1000;
   const startDate = new Date(startUtcTimestamp);
   const endDate = new Date(startDate.getTime() + 20 * 60 * 1000); // 20 min slot
 
@@ -325,9 +331,12 @@ function generateGoogleCalendarUrl({
   url.searchParams.set('action', 'TEMPLATE');
   url.searchParams.set('text', title);
   url.searchParams.set('dates', `${startUtc}/${endUtc}`);
+  url.searchParams.set('ctz', 'Asia/Kolkata');
   url.searchParams.set('details', description);
   url.searchParams.set('location', location);
-  url.searchParams.set('add', attendeeEmail);
+  if (attendeeEmail && attendeeEmail.includes('@')) {
+    url.searchParams.set('add', attendeeEmail);
+  }
   return url.toString();
 }
 
