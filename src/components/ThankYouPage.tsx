@@ -52,7 +52,7 @@ export const ThankYouPage: React.FC<ThankYouPageProps> = ({
   const createGoogleCalendarUrl = () => {
     const title = encodeURIComponent(`Founder Authority Strategy Call: ${founderName}`);
     const details = encodeURIComponent(
-      `20-Minute Executive Strategy Call with Founder Authority.\n\nFounder: ${founderName}\nCompany: ${companyName}\nLinkedIn: ${linkedinUrl}\n\nNotice: Email dispatch is temporarily offline. Strategy call request stored in Firestore.`
+      `20-Minute Executive Strategy Call with Founder Authority.\n\nFounder: ${founderName}\nCompany: ${companyName}\nLinkedIn: ${linkedinUrl}\n\nJoin via Google Meet at your scheduled slot.`
     );
     const location = encodeURIComponent('Founder Authority Video Conference');
     return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&details=${details}&location=${location}`;
@@ -73,8 +73,8 @@ export const ThankYouPage: React.FC<ThankYouPageProps> = ({
           </button>
 
           <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-[#14141A] border border-[#262626] text-xs text-[#A1A1AA]">
-            <Database className="w-3.5 h-3.5 text-[#FF6A00]" />
-            <span>Saved to Firestore</span>
+            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+            <span>Booking Confirmed</span>
           </div>
         </div>
 
@@ -194,11 +194,11 @@ export const ThankYouPage: React.FC<ThankYouPageProps> = ({
             </div>
           </div>
 
-          {/* Quick Notice about Email & Firestore */}
+          {/* Quick Notice about Scheduled Strategy Call */}
           <div className="bg-[#1F1F27]/60 border border-[#262626] rounded-xl p-4 mb-8 text-xs text-[#A1A1AA] flex items-center gap-3">
             <Sparkles className="w-4 h-4 text-[#FF6A00] shrink-0" />
             <p className="leading-relaxed">
-              <strong className="text-[#FFFFFF]">Direct Firestore Storage:</strong> Your booking details are saved directly in our executive Firestore system. Automated email dispatch is temporarily paused to ensure personal review by our strategy team.
+              <strong className="text-[#FFFFFF]">Strategy Session Locked:</strong> Your executive call is confirmed. Add the event to your Google or Outlook calendar below, and join via the Google Meet link at your scheduled time.
             </p>
           </div>
 

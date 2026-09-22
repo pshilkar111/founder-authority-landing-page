@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   X,
   Clock,
@@ -9,7 +9,6 @@ import {
   Loader2,
   Building,
   User,
-  ShieldCheck,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
@@ -33,6 +32,30 @@ export const AuditBookingModal: React.FC<AuditBookingModalProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
+  const dateOptions = useMemo(() => {
+    const options: string[] = [];
+    const now = new Date();
+    let added = 0;
+    for (let i = 0; added < 5 && i < 14; i++) {
+      const d = new Date(now);
+      d.setDate(now.getDate() + i);
+      if (d.getDay() === 0) continue; // Skip Sunday
+      const month = d.toLocaleDateString('en-US', { month: 'short' });
+      const day = d.getDate();
+      const year = d.getFullYear();
+      const weekday = d.toLocaleDateString('en-US', { weekday: 'long' });
+      if (i === 0) {
+        options.push(`Today, ${month} ${day}, ${year}`);
+      } else if (i === 1) {
+        options.push(`Tomorrow, ${month} ${day}, ${year}`);
+      } else {
+        options.push(`${weekday}, ${month} ${day}, ${year}`);
+      }
+      added++;
+    }
+    return options;
+  }, []);
+
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
@@ -40,17 +63,9 @@ export const AuditBookingModal: React.FC<AuditBookingModalProps> = ({
     companyName: '',
     primaryGoal: 'Attracting Customers & Inbound Opportunities',
     selectedPlan: initialPlan || 'For Founders Ready To Grow (₹40,000/mo)',
-    dateSelected: 'Tomorrow, Sep 22, 2026',
+    dateSelected: 'Today, Sep 22, 2026',
     timeSelected: '3:00 PM IST',
   });
-
-  const dateOptions = [
-    'Tomorrow, Sep 22, 2026',
-    'Wednesday, Sep 23, 2026',
-    'Thursday, Sep 24, 2026',
-    'Friday, Sep 25, 2026',
-    'Next Monday, Sep 28, 2026',
-  ];
 
   const timeOptions = [
     '10:00 AM IST',
@@ -67,8 +82,11 @@ export const AuditBookingModal: React.FC<AuditBookingModalProps> = ({
       setStep(1);
       setIsSubmitting(false);
       setErrorMessage(null);
+      if (dateOptions.length > 0) {
+        setFormData((prev) => ({ ...prev, dateSelected: dateOptions[0] }));
+      }
     }
-  }, [isOpen]);
+  }, [isOpen, dateOptions]);
 
   useEffect(() => {
     if (initialPlan) {
@@ -422,16 +440,6 @@ export const AuditBookingModal: React.FC<AuditBookingModalProps> = ({
                     </div>
                   </div>
 
-                  <div className="p-3 rounded-xl bg-[#0B0B0F] border border-[#262626] text-xs text-[#A1A1AA] space-y-1">
-                    <div className="flex items-center gap-1.5 text-[#FFFFFF] font-semibold">
-                      <ShieldCheck className="w-3.5 h-3.5 text-[#FF6A00]" />
-                      <span>Firestore Cloud Persistence</span>
-                    </div>
-                    <p className="text-[11px] leading-relaxed text-[#71717A]">
-                      Your booking request will be saved directly into our executive Firestore database. You will be redirected to the Thank You confirmation page immediately.
-                    </p>
-                  </div>
-
                   <div className="flex gap-2 pt-2">
                     <button
                       type="button"
@@ -450,7 +458,7 @@ export const AuditBookingModal: React.FC<AuditBookingModalProps> = ({
                       {isSubmitting ? (
                         <>
                           <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                          <span>Saving to Firestore...</span>
+                          <span>Confirming your booking...</span>
                         </>
                       ) : (
                         <>
